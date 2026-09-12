@@ -57,6 +57,8 @@ export interface QuestCompletionResult {
   current_streak: number;
   attribute_leveled_up: boolean;
   new_attribute_level?: number;
+  proof_text?: string;
+  proof_link?: string;
 }
 
 export interface Item {
@@ -82,6 +84,8 @@ export interface QuestHistory {
   gold_awarded: number;
   streak_at_completion: number;
   quest_title?: string;
+  proof_text?: string;
+  proof_link?: string;
 }
 
 export interface LeaderboardUser {

@@ -36,7 +36,9 @@ async def get_history(
                 xp_awarded=c.xp_awarded,
                 gold_awarded=c.gold_awarded,
                 streak_at_completion=c.streak_at_completion,
-                quest_title=q.title if q else "Archived Quest"
+                quest_title=q.title if q else "Archived Quest",
+                proof_text=c.proof_text,
+                proof_link=c.proof_link
             )
         )
     return out

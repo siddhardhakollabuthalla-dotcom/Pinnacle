@@ -112,12 +112,16 @@ async def test_character_and_quests_flow(init_db_fixture):
         all_quests = await ac.get("/quests?status_filter=all")
         assert len(all_quests.json()) >= 1
 
-        # Complete Quest
-        comp_res = await ac.post(f"/quests/{q1['id']}/complete")
+        # Complete Quest with Proof
+        comp_res = await ac.post(f"/quests/{q1['id']}/complete", json={
+            "proof_text": "Finished reading 30 pages and wrote detailed summary notes",
+            "proof_link": "https://github.com/notes"
+        })
         assert comp_res.status_code == 200
         comp_data = comp_res.json()
         assert comp_data["quest_id"] == q1["id"]
         assert comp_data["xp_awarded"] > 0
+        assert comp_data["proof_text"] == "Finished reading 30 pages and wrote detailed summary notes"
 
         # Try completing non-recurring completed quest again -> 400
         comp_again = await ac.post(f"/quests/{q1['id']}/complete")
@@ -127,6 +131,7 @@ async def test_character_and_quests_flow(init_db_fixture):
         hist_res = await ac.get("/history")
         assert hist_res.status_code == 200
         assert len(hist_res.json()) >= 1
+        assert hist_res.json()[0]["proof_text"] == "Finished reading 30 pages and wrote detailed summary notes"
 
 @pytest.mark.asyncio
 async def test_shop_and_inventory_flow(init_db_fixture):
@@ -182,12 +187,21 @@ async def test_legendary_quest_and_leaderboard(init_db_fixture):
         leg_data = leg_q.json()
         assert leg_data["difficulty"] == "legendary"
 
-        # 3. Complete Legendary Quest
-        comp_res = await ac.post(f"/quests/{leg_data['id']}/complete")
+        # 3. Complete Legendary Quest without proof -> fails with 400 anti-cheat
+        fail_res = await ac.post(f"/quests/{leg_data['id']}/complete")
+        assert fail_res.status_code == 400
+        assert "Verification proof is required" in fail_res.json()["detail"]
+
+        # 3b. Complete Legendary Quest with proof -> succeeds
+        comp_res = await ac.post(f"/quests/{leg_data['id']}/complete", json={
+            "proof_text": "Built resilient multi-region raft consensus cluster with chaos testing verification",
+            "proof_link": "https://github.com/my-raft-cluster"
+        })
         assert comp_res.status_code == 200
         comp_data = comp_res.json()
         assert comp_data["xp_awarded"] >= 250
         assert comp_data["gold_awarded"] >= 60
+        assert comp_data["proof_text"] == "Built resilient multi-region raft consensus cluster with chaos testing verification"
 
         # 4. Check Leaderboard
         lead_res = await ac.get("/character/leaderboard")

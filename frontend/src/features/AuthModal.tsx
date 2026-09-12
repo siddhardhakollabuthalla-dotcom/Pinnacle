@@ -39,7 +39,7 @@ export const AuthModal: React.FC<{ onAuthSuccess: (user: User) => void }> = ({ o
             <Shield className="w-8 h-8" />
           </div>
           <h1 className="text-2xl font-extrabold tracking-wider bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-500 bg-clip-text text-transparent">
-            LIFE RPG ENGINE
+            PINNACLE
           </h1>
           <p className="text-xs text-gray-400 mt-1 font-mono">Gamify your daily tasks & level up real-world skills</p>
         </div>
