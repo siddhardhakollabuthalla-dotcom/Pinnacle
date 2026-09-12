@@ -9,6 +9,7 @@ DIFFICULTY_REWARDS = {
     "medium": {"xp": 30, "gold": 7},
     "hard": {"xp": 60, "gold": 15},
     "epic": {"xp": 120, "gold": 35},
+    "legendary": {"xp": 250, "gold": 60},
 }
 
 def xp_to_next_level(level: int) -> int:

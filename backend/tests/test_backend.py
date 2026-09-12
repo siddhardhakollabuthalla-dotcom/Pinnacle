@@ -165,3 +165,49 @@ def test_xp_curve():
     assert xp_to_next_level(1) == 50
     assert xp_to_next_level(2) == 151  # floor(50 * 2^1.6)
     assert xp_to_next_level(5) == 656  # floor(50 * 5^1.6)
+
+@pytest.mark.asyncio
+async def test_legendary_quest_and_leaderboard(init_db_fixture):
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        # 1. Login
+        login_res = await ac.post("/auth/login", json={"username_or_email": "hero123", "password": "password123"})
+        assert login_res.status_code == 200
+
+        # 2. Create Legendary Quest
+        leg_q = await ac.post("/quests", json={
+            "title": "Conquer Distributed Systems Architecture",
+            "difficulty": "legendary"
+        })
+        assert leg_q.status_code == 200
+        leg_data = leg_q.json()
+        assert leg_data["difficulty"] == "legendary"
+
+        # 3. Complete Legendary Quest
+        comp_res = await ac.post(f"/quests/{leg_data['id']}/complete")
+        assert comp_res.status_code == 200
+        comp_data = comp_res.json()
+        assert comp_data["xp_awarded"] >= 250
+        assert comp_data["gold_awarded"] >= 60
+
+        # 4. Check Leaderboard
+        lead_res = await ac.get("/character/leaderboard")
+        assert lead_res.status_code == 200
+        leaderboard = lead_res.json()
+        assert len(leaderboard) >= 5
+        # Verify ranks are sequential 1, 2, 3...
+        for idx, entry in enumerate(leaderboard, start=1):
+            assert entry["rank"] == idx
+        # Verify current user is marked is_current
+        current_entries = [e for e in leaderboard if e["is_current"]]
+        assert len(current_entries) == 1
+        assert current_entries[0]["name"] == "hero123"
+
+        # 5. Signup returns token
+        new_signup = await ac.post("/auth/signup", json={
+            "email": "legendary_hero@liferpg.com",
+            "username": "legendary_hero",
+            "password": "password123"
+        })
+        assert new_signup.status_code == 200
+        assert new_signup.json()["token"] is not None
+

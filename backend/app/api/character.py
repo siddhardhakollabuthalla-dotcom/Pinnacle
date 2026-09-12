@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -6,7 +7,7 @@ from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.api.auth import get_current_user
 from app.models.models import User, Character, CharacterAttribute, Attribute
-from app.schemas.schemas import CharacterOut, CharacterAttributeOut, AttributeOut
+from app.schemas.schemas import CharacterOut, CharacterAttributeOut, AttributeOut, LeaderboardUserOut
 from app.services.progression import xp_to_next_level, attribute_xp_to_next_level
 
 router = APIRouter(prefix="/character", tags=["character"])
@@ -84,3 +85,64 @@ async def get_character(
         last_completion_date=character.last_completion_date,
         attributes=attrs_out
     )
+
+@router.get("/leaderboard", response_model=List[LeaderboardUserOut])
+async def get_leaderboard(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    # Benchmark competitors
+    benchmark_players = [
+        {"name": "VORTEX_SHADOW", "level": 42, "xp": 14250, "streak": 28},
+        {"name": "CYBER_HERO", "level": 38, "xp": 11820, "streak": 19},
+        {"name": "NEON_KNIGHT", "level": 22, "xp": 6450, "streak": 12},
+        {"name": "TITAN_GRIND", "level": 19, "xp": 5120, "streak": 8},
+        {"name": "VALKYRIE_99", "level": 15, "xp": 3800, "streak": 6},
+    ]
+
+    # Fetch all real users with their characters
+    result = await db.execute(
+        select(User, Character)
+        .join(Character, Character.user_id == User.id)
+    )
+    user_char_pairs = result.all()
+
+    all_players = []
+    seen_names = set()
+
+    for user, character in user_char_pairs:
+        all_players.append({
+            "name": user.username,
+            "level": character.level,
+            "xp": character.total_xp,
+            "streak": character.current_streak,
+            "is_current": (user.id == current_user.id)
+        })
+        seen_names.add(user.username.lower())
+
+    for bp in benchmark_players:
+        if bp["name"].lower() not in seen_names:
+            all_players.append({
+                "name": bp["name"],
+                "level": bp["level"],
+                "xp": bp["xp"],
+                "streak": bp["streak"],
+                "is_current": False
+            })
+
+    # Sort descending by XP, then level, then streak
+    all_players.sort(key=lambda p: (p["xp"], p["level"], p["streak"]), reverse=True)
+
+    # Assign ranks
+    out = []
+    for idx, p in enumerate(all_players[:10], start=1):
+        out.append(LeaderboardUserOut(
+            rank=idx,
+            name=p["name"],
+            level=p["level"],
+            xp=p["xp"],
+            streak=p["streak"],
+            is_current=p["is_current"]
+        ))
+
+    return out

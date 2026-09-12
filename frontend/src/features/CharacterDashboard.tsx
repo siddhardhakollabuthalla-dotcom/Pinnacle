@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Sparkles, Dumbbell, Brain, ShieldCheck, Palette, HeartPulse, Crown } from 'lucide-react';
+import { Shield, Sparkles, Dumbbell, Brain, ShieldCheck, Palette, HeartPulse, Crown, Zap } from 'lucide-react';
 import type { Character } from '../types';
 import { XPBar, StreakFlame } from '../components/GamificationEffects';
 
@@ -9,6 +9,8 @@ const ATTRIBUTE_ICONS: Record<string, React.ReactNode> = {
   ShieldCheck: <ShieldCheck className="w-5 h-5 text-emerald-400" />,
   Palette: <Palette className="w-5 h-5 text-purple-400" />,
   HeartPulse: <HeartPulse className="w-5 h-5 text-rose-400" />,
+  Zap: <Zap className="w-5 h-5 text-yellow-400" />,
+  Crown: <Crown className="w-5 h-5 text-amber-300" />,
 };
 
 export const CharacterDashboard: React.FC<{ character: Character }> = ({ character }) => {
@@ -88,7 +90,7 @@ export const CharacterDashboard: React.FC<{ character: Character }> = ({ charact
           <h3 className="text-sm font-bold font-cinzel tracking-widest text-amber-400 uppercase flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-400" /> STAT TREE & ATTRIBUTES
           </h3>
-          <span className="text-xs font-mono text-zinc-500">5 ACTIVE STATS</span>
+          <span className="text-xs font-mono text-zinc-500">{character.attributes.length} ACTIVE STATS</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

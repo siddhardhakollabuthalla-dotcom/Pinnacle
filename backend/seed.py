@@ -1,5 +1,6 @@
 import asyncio
 from sqlalchemy.future import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import AsyncSessionLocal, init_db
 from app.models.models import Attribute, Item, User, Character, CharacterAttribute
 from app.core.security import get_password_hash
@@ -56,7 +57,6 @@ async def seed_data(session: AsyncSession = None):
     if session is not None:
         await _perform_seed(session)
     else:
-        await init_db()
         async with AsyncSessionLocal() as db_session:
             await _perform_seed(db_session)
 
@@ -102,4 +102,7 @@ async def _perform_seed(session: AsyncSession):
     print("Database successfully seeded with Attributes, Shop Items, and Demo User!")
 
 if __name__ == "__main__":
-    asyncio.run(seed_data())
+    async def _main():
+        await init_db()
+        await seed_data()
+    asyncio.run(_main())

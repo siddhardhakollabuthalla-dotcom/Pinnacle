@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from 'react';
+import { useUIStore } from '../../store/useUIStore';
 
 export const GameBackground: React.FC = () => {
+  const { currentTheme } = useUIStore();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -20,6 +22,13 @@ export const GameBackground: React.FC = () => {
     };
     window.addEventListener('resize', handleResize);
 
+    const themeColors: Record<string, [string, string]> = {
+      cyberpunk: ['#f59e0b', '#06b6d4'],
+      dungeon: ['#e2b041', '#d97706'],
+      lofi: ['#e0a96d', '#f472b6'],
+    };
+    const activeColors = themeColors[currentTheme] || themeColors.cyberpunk;
+
     // Particle nodes
     const particles = Array.from({ length: 45 }, () => ({
       x: Math.random() * width,
@@ -28,7 +37,7 @@ export const GameBackground: React.FC = () => {
       vy: (Math.random() - 0.5) * 0.4,
       radius: Math.random() * 2 + 1,
       alpha: Math.random() * 0.5 + 0.2,
-      color: Math.random() > 0.5 ? '#f59e0b' : '#06b6d4',
+      color: Math.random() > 0.5 ? activeColors[0] : activeColors[1],
     }));
 
     const render = () => {
@@ -81,7 +90,7 @@ export const GameBackground: React.FC = () => {
       window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(animationId);
     };
-  }, []);
+  }, [currentTheme]);
 
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-gradient-to-b from-[#050609] via-[#090b14] to-[#040508]">

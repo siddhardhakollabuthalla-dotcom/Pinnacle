@@ -40,7 +40,7 @@ export interface Quest {
   description?: string;
   attribute_id?: string;
   attribute?: Attribute;
-  difficulty: 'trivial' | 'easy' | 'medium' | 'hard' | 'epic';
+  difficulty: 'trivial' | 'easy' | 'medium' | 'hard' | 'epic' | 'legendary';
   is_recurring: boolean;
   recurrence_rule?: string;
   status: 'active' | 'completed' | 'archived';
@@ -82,4 +82,13 @@ export interface QuestHistory {
   gold_awarded: number;
   streak_at_completion: number;
   quest_title?: string;
+}
+
+export interface LeaderboardUser {
+  rank: number;
+  name: string;
+  level: number;
+  xp: number;
+  streak: number;
+  is_current?: boolean;
 }

@@ -84,6 +84,7 @@ async def signup(user_in: UserCreate, response: Response, db: AsyncSession = Dep
         secure=False,  # Dev default
         max_age=60 * 60 * 24 * 7
     )
+    new_user.token = token
     return new_user
 
 @router.post("/login")

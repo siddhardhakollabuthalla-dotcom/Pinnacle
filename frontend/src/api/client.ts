@@ -1,4 +1,4 @@
-import type { User, Character, Quest, QuestCompletionResult, Item, InventoryItem, QuestHistory } from '../types';
+import type { User, Character, Quest, QuestCompletionResult, Item, InventoryItem, QuestHistory, LeaderboardUser } from '../types';
 
 // Use relative '/api' endpoint so Vite proxies directly to FastAPI backend, resolving cross-origin HTTPS -> HTTP browser blocks
 const API_BASE = '/api';
@@ -36,7 +36,11 @@ export const api = {
       credentials: 'include',
       body: JSON.stringify(data),
     });
-    return handleResponse<User>(res);
+    const result = await handleResponse<any>(res);
+    if (result.token) {
+      localStorage.setItem('token', result.token);
+    }
+    return result.user || result;
   },
 
   login: async (data: { username_or_email: string; password: string }): Promise<{ token: string; user: User }> => {
@@ -54,6 +58,7 @@ export const api = {
   },
 
   logout: async (): Promise<void> => {
+    localStorage.removeItem('token');
     await fetch(`${API_BASE}/auth/logout`, {
       method: 'POST',
       credentials: 'include',
@@ -86,7 +91,7 @@ export const api = {
   }): Promise<Quest> => {
     const res = await fetch(`${API_BASE}/quests`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(true),
       credentials: 'include',
       body: JSON.stringify(quest),
     });
@@ -96,6 +101,7 @@ export const api = {
   completeQuest: async (questId: string): Promise<QuestCompletionResult> => {
     const res = await fetch(`${API_BASE}/quests/${questId}/complete`, {
       method: 'POST',
+      headers: getHeaders(false),
       credentials: 'include',
     });
     return handleResponse<QuestCompletionResult>(res);
@@ -104,6 +110,7 @@ export const api = {
   deleteQuest: async (questId: string): Promise<{ status: string }> => {
     const res = await fetch(`${API_BASE}/quests/${questId}`, {
       method: 'DELETE',
+      headers: getHeaders(false),
       credentials: 'include',
     });
     return handleResponse<{ status: string }>(res);
@@ -111,18 +118,19 @@ export const api = {
 
   // Shop & Inventory
   getShopItems: async (): Promise<Item[]> => {
-    const res = await fetch(`${API_BASE}/shop/items`, { credentials: 'include' });
+    const res = await fetch(`${API_BASE}/shop/items`, { headers: getHeaders(false), credentials: 'include' });
     return handleResponse<Item[]>(res);
   },
 
   getInventory: async (): Promise<InventoryItem[]> => {
-    const res = await fetch(`${API_BASE}/shop/inventory`, { credentials: 'include' });
+    const res = await fetch(`${API_BASE}/shop/inventory`, { headers: getHeaders(false), credentials: 'include' });
     return handleResponse<InventoryItem[]>(res);
   },
 
   purchaseItem: async (itemId: string): Promise<{ status: string; remaining_gold: number; item: Item }> => {
     const res = await fetch(`${API_BASE}/shop/purchase/${itemId}`, {
       method: 'POST',
+      headers: getHeaders(false),
       credentials: 'include',
     });
     return handleResponse<{ status: string; remaining_gold: number; item: Item }>(res);
@@ -131,6 +139,7 @@ export const api = {
   equipItem: async (itemId: string): Promise<{ status: string; item_id: string }> => {
     const res = await fetch(`${API_BASE}/shop/equip/${itemId}`, {
       method: 'POST',
+      headers: getHeaders(false),
       credentials: 'include',
     });
     return handleResponse<{ status: string; item_id: string }>(res);
@@ -138,7 +147,13 @@ export const api = {
 
   // History
   getHistory: async (): Promise<QuestHistory[]> => {
-    const res = await fetch(`${API_BASE}/history`, { credentials: 'include' });
+    const res = await fetch(`${API_BASE}/history`, { headers: getHeaders(false), credentials: 'include' });
     return handleResponse<QuestHistory[]>(res);
+  },
+
+  // Leaderboard
+  getLeaderboard: async (): Promise<LeaderboardUser[]> => {
+    const res = await fetch(`${API_BASE}/character/leaderboard`, { headers: getHeaders(false), credentials: 'include' });
+    return handleResponse<LeaderboardUser[]>(res);
   },
 };

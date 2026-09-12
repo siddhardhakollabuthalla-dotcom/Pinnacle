@@ -19,7 +19,7 @@ import { useUIStore } from './store/useUIStore';
 export const App: React.FC = () => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<NavTab>('lobby');
-  const { addFloatingXp, showLevelUp } = useUIStore();
+  const { addFloatingXp, showLevelUp, setTheme } = useUIStore();
 
   // 1. Auth query
   const { data: user, isLoading: userLoading, error: userError } = useQuery<User>({
@@ -54,6 +54,14 @@ export const App: React.FC = () => {
     queryFn: api.getInventory,
     enabled: !!user,
   });
+
+  // Automatically sync equipped theme from inventory
+  React.useEffect(() => {
+    const equippedTheme = inventory.find((inv) => inv.equipped && inv.item.type === 'theme');
+    if (equippedTheme?.item.metadata_json?.theme_key) {
+      setTheme(equippedTheme.item.metadata_json.theme_key);
+    }
+  }, [inventory, setTheme]);
 
   // Complete Quest Mutation
   const completeMutation = useMutation({
@@ -176,7 +184,17 @@ export const App: React.FC = () => {
   });
 
   const handleCompleteQuest = async (questId: string, e: React.MouseEvent) => {
-    addFloatingXp('+250 XP', e.clientX, e.clientY);
+    const targetQuest = quests.find((q) => q.id === questId);
+    const xpMap: Record<string, number> = {
+      trivial: 5,
+      easy: 15,
+      medium: 30,
+      hard: 60,
+      epic: 120,
+      legendary: 250,
+    };
+    const xpGain = targetQuest ? (xpMap[targetQuest.difficulty] || 30) : 30;
+    addFloatingXp(`+${xpGain} XP`, e.clientX, e.clientY);
     completeMutation.mutate(questId);
   };
 
@@ -226,7 +244,7 @@ export const App: React.FC = () => {
           <GameLobby
             user={user}
             character={character}
-            activeQuests={quests}
+            activeQuests={quests.filter((q) => q.status === 'active')}
             onStartQuest={() => setActiveTab('quests')}
             onViewCharacter={() => setActiveTab('character')}
             onViewBattlePass={() => setActiveTab('battlepass')}
@@ -261,7 +279,7 @@ export const App: React.FC = () => {
           />
         )}
 
-        {activeTab === 'achievements' && <Achievements />}
+        {activeTab === 'achievements' && <Achievements character={character} quests={quests} />}
 
         {activeTab === 'leaderboard' && (
           <Leaderboard currentCharacter={character} currentUser={user} />

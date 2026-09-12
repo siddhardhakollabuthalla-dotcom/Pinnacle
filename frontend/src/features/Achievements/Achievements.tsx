@@ -1,5 +1,6 @@
 import React from 'react';
 import { Award, Lock, Trophy, Flame, Zap, Crown } from 'lucide-react';
+import type { Character, Quest } from '../../types';
 
 interface Achievement {
   id: string;
@@ -11,13 +12,58 @@ interface Achievement {
   progress: string;
 }
 
-export const Achievements: React.FC = () => {
+export const Achievements: React.FC<{ character?: Character; quests?: Quest[] }> = ({ character, quests = [] }) => {
+  const completedCount = quests.filter((q) => q.status === 'completed').length;
+  const streak = character?.current_streak || 0;
+  const totalXp = character?.total_xp || 0;
+  const level = character?.level || 1;
+
   const achievementsList: Achievement[] = [
-    { id: '1', title: 'FIRST QUEST', description: 'Complete your first real-world RPG quest.', reward: '+100 XP, +50 Coins', icon: <Trophy className="w-6 h-6 text-amber-400" />, unlocked: true, progress: '1/1' },
-    { id: '2', title: '7 DAY WARRIOR', description: 'Maintain a 7-day habit streak without breaking.', reward: '+300 XP, +100 Coins, Title: "Warrior"', icon: <Flame className="w-6 h-6 text-orange-500 fill-orange-500" />, unlocked: false, progress: '1/7' },
-    { id: '3', title: 'CODE WARRIOR', description: 'Complete 50 coding and technical mastery quests.', reward: '+500 XP, +15 Gems', icon: <Zap className="w-6 h-6 text-cyan-400" />, unlocked: false, progress: '3/50' },
-    { id: '4', title: 'KNOWLEDGE SEEKER', description: 'Study or read for 100 total logged hours.', reward: '+600 XP, Scholar Crown Badge', icon: <Crown className="w-6 h-6 text-yellow-300" />, unlocked: false, progress: '12/100' },
-    { id: '5', title: 'SPEEDRUNNER', description: 'Complete 10 quests in a single calendar day.', reward: '+1000 XP, Speedrunner Title', icon: <Award className="w-6 h-6 text-purple-400" />, unlocked: false, progress: '1/10' },
+    {
+      id: '1',
+      title: 'FIRST QUEST',
+      description: 'Complete your first real-world RPG quest.',
+      reward: '+100 XP, +50 Coins',
+      icon: <Trophy className="w-6 h-6 text-amber-400" />,
+      unlocked: completedCount >= 1,
+      progress: `${Math.min(completedCount, 1)}/1`,
+    },
+    {
+      id: '2',
+      title: '7 DAY WARRIOR',
+      description: 'Maintain a 7-day habit streak without breaking.',
+      reward: '+300 XP, +100 Coins, Title: "Warrior"',
+      icon: <Flame className="w-6 h-6 text-orange-500 fill-orange-500" />,
+      unlocked: streak >= 7,
+      progress: `${Math.min(streak, 7)}/7`,
+    },
+    {
+      id: '3',
+      title: 'CODE WARRIOR',
+      description: 'Complete 5 real-world missions and tasks.',
+      reward: '+500 XP, +15 Gems',
+      icon: <Zap className="w-6 h-6 text-cyan-400" />,
+      unlocked: completedCount >= 5,
+      progress: `${Math.min(completedCount, 5)}/5`,
+    },
+    {
+      id: '4',
+      title: 'KNOWLEDGE SEEKER',
+      description: 'Accumulate 250 lifetime XP on your journey.',
+      reward: '+600 XP, Scholar Crown Badge',
+      icon: <Crown className="w-6 h-6 text-yellow-300" />,
+      unlocked: totalXp >= 250,
+      progress: `${Math.min(totalXp, 250)}/250 XP`,
+    },
+    {
+      id: '5',
+      title: 'SPEEDRUNNER',
+      description: 'Attain Character Level 5 through continuous questing.',
+      reward: '+1000 XP, Speedrunner Title',
+      icon: <Award className="w-6 h-6 text-purple-400" />,
+      unlocked: level >= 5,
+      progress: `LVL ${Math.min(level, 5)}/5`,
+    },
   ];
 
   return (
