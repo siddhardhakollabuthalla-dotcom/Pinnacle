@@ -18,6 +18,12 @@ class UserOut(BaseModel):
     email: str
     username: str
     created_at: datetime
+    token: Optional[str] = None
+
+class AuthResponse(BaseModel):
+    status: str = "success"
+    token: str
+    user: UserOut
 
 # Attribute Schemas
 class AttributeOut(BaseModel):
@@ -55,7 +61,7 @@ class QuestCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
     attribute_id: Optional[str] = None
-    difficulty: str = Field("medium", pattern="^(trivial|easy|medium|hard|epic)$")
+    difficulty: str = Field("medium", pattern="^(trivial|easy|medium|hard|epic|legendary)$")
     is_recurring: bool = False
     recurrence_rule: Optional[str] = None
     due_at: Optional[datetime] = None
@@ -64,7 +70,7 @@ class QuestUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     attribute_id: Optional[str] = None
-    difficulty: Optional[str] = None
+    difficulty: Optional[str] = Field(None, pattern="^(trivial|easy|medium|hard|epic|legendary)$")
     is_recurring: Optional[bool] = None
     recurrence_rule: Optional[str] = None
     due_at: Optional[datetime] = None
@@ -119,3 +125,11 @@ class HistoryOut(BaseModel):
     gold_awarded: int
     streak_at_completion: int
     quest_title: Optional[str] = None
+
+class LeaderboardUserOut(BaseModel):
+    rank: int
+    name: str
+    level: int
+    xp: int
+    streak: int
+    is_current: bool = False

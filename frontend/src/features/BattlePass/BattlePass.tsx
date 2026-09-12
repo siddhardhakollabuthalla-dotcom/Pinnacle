@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Gift, Lock, CheckCircle2, Sparkles } from 'lucide-react';
 import type { Character } from '../../types';
 import { soundEngine } from '../../utils/soundEngine';
@@ -13,6 +13,27 @@ interface Tier {
 
 export const BattlePass: React.FC<{ character: Character }> = ({ character }) => {
   const currentLevel = character.level;
+  const storageKey = `battlepass_claimed_${character.id}`;
+
+  const [claimedTiers, setClaimedTiers] = useState<Set<number>>(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      return saved ? new Set(JSON.parse(saved)) : new Set([1]);
+    } catch {
+      return new Set([1]);
+    }
+  });
+
+  const handleClaim = (tierLevel: number) => {
+    soundEngine.play('reward_claim');
+    setClaimedTiers((prev) => {
+      const next = new Set(prev).add(tierLevel);
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(Array.from(next)));
+      } catch {}
+      return next;
+    });
+  };
 
   const tiers: Tier[] = [
     { level: 1, freeReward: '100 COINS', premiumReward: '5 GEMS', icon: '🪙', isUnlocked: currentLevel >= 1 },
@@ -80,12 +101,18 @@ export const BattlePass: React.FC<{ character: Character }> = ({ character }) =>
                   </div>
 
                   {tier.isUnlocked ? (
-                    <button
-                      onClick={() => soundEngine.play('reward_claim')}
-                      className="w-full py-1.5 rounded-lg bg-amber-500 text-black font-mono font-bold text-[10px] uppercase flex items-center justify-center gap-1 shadow"
-                    >
-                      <CheckCircle2 className="w-3 h-3" /> CLAIMED
-                    </button>
+                    claimedTiers.has(tier.level) ? (
+                      <div className="w-full py-1.5 rounded-lg bg-amber-500/20 text-amber-300 font-mono font-bold text-[10px] uppercase flex items-center justify-center gap-1 border border-amber-500/40">
+                        <CheckCircle2 className="w-3 h-3 text-amber-400" /> CLAIMED
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleClaim(tier.level)}
+                        className="w-full py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-mono font-bold text-[10px] uppercase flex items-center justify-center gap-1 shadow cursor-pointer transition-transform active:scale-95"
+                      >
+                        [ 🎁 CLAIM ]
+                      </button>
+                    )
                   ) : (
                     <div className="w-full py-1 rounded-lg bg-zinc-800 text-zinc-500 font-mono text-[10px] flex items-center justify-center gap-1">
                       <Lock className="w-3 h-3" /> LOCKED

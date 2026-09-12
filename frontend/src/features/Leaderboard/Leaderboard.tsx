@@ -1,15 +1,36 @@
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Trophy, Crown, Shield } from 'lucide-react';
 import type { User, Character } from '../../types';
+import { api } from '../../api/client';
 
 export const Leaderboard: React.FC<{ currentCharacter?: Character; currentUser: User }> = ({ currentCharacter, currentUser }) => {
-  const leaderboardUsers = [
+  const { data: serverLeaderboard } = useQuery({
+    queryKey: ['leaderboard'],
+    queryFn: api.getLeaderboard,
+  });
+
+  const benchmarkUsers = [
     { rank: 1, name: 'VORTEX_SHADOW', level: 42, xp: 14250, streak: 28, isCurrent: false },
     { rank: 2, name: 'CYBER_HERO', level: 38, xp: 11820, streak: 19, isCurrent: false },
     { rank: 3, name: currentUser.username, level: currentCharacter?.level || 1, xp: currentCharacter?.total_xp || 0, streak: currentCharacter?.current_streak || 0, isCurrent: true },
     { rank: 4, name: 'NEON_KNIGHT', level: 22, xp: 6450, streak: 12, isCurrent: false },
     { rank: 5, name: 'TITAN_GRIND', level: 19, xp: 5120, streak: 8, isCurrent: false },
   ];
+
+  // If server leaderboard is available, use it; otherwise compute dynamic XP sorted ranking
+  const rawList = serverLeaderboard && serverLeaderboard.length >= 3
+    ? serverLeaderboard.map((u) => ({
+        ...u,
+        isCurrent: u.is_current ?? (u.name.toLowerCase() === currentUser.username.toLowerCase()),
+      }))
+    : benchmarkUsers;
+
+  const sortedList = [...rawList].sort((a, b) => b.xp - a.xp);
+  const leaderboardUsers = sortedList.map((u, i) => ({
+    ...u,
+    rank: i + 1,
+  }));
 
   return (
     <div className="space-y-6">
