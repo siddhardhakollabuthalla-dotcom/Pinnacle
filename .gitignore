@@ -1,0 +1,28 @@
+# Python / Virtualenv
+__pycache__/
+*.py[cod]
+*$py.class
+backend/venv/
+venv/
+ENV/
+env/
+.pytest_cache/
+*.db
+backend/liferpg.db
+
+# Environment variables
+.env
+*.env
+
+# Node / Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+*.log
+
+# IDE & System
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
