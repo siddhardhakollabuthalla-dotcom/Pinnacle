@@ -98,11 +98,15 @@ export const api = {
     return handleResponse<Quest>(res);
   },
 
-  completeQuest: async (questId: string): Promise<QuestCompletionResult> => {
+  completeQuest: async (
+    questId: string,
+    proof?: { proof_text: string; proof_link?: string }
+  ): Promise<QuestCompletionResult> => {
     const res = await fetch(`${API_BASE}/quests/${questId}/complete`, {
       method: 'POST',
-      headers: getHeaders(false),
+      headers: getHeaders(true),
       credentials: 'include',
+      body: JSON.stringify(proof || {}),
     });
     return handleResponse<QuestCompletionResult>(res);
   },

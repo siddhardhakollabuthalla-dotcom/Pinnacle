@@ -21,7 +21,7 @@ export const GameLobby: React.FC<{
       {/* Top Banner Tagline */}
       <div className="text-center space-y-1">
         <h2 className="text-4xl md:text-5xl font-black font-game-title tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-500 drop-shadow-[0_0_20px_rgba(245,158,11,0.4)]">
-          LEVEL_up
+          PINNACLE
         </h2>
         <p className="text-xs font-mono uppercase tracking-widest text-cyan-400">
           WELCOME HERO {user.username} • "Your Life. Your Character. Your Game."

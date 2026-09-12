@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 NEON_PG_URL = "postgresql+asyncpg://neondb_owner:npg_lwc0WFNbvtV6@ep-tiny-recipe-aypngxwk-pooler.c-5.us-east-2.aws.neon.tech/neondb?ssl=require"
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "Life RPG API"
+    PROJECT_NAME: str = "Pinnacle API"
     SECRET_KEY: str = "super-secret-life-rpg-key-change-in-production-2026"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7

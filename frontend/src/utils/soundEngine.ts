@@ -1,4 +1,4 @@
-// Sound Utility for LEVEL_up UI SFX
+// Sound Utility for Pinnacle UI SFX
 class SoundEngine {
   private enabled: boolean = true;
   private ctx: AudioContext | null = null;

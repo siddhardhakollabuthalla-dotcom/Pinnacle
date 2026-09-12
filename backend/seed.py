@@ -74,32 +74,7 @@ async def _perform_seed(session: AsyncSession):
             session.add(Item(**item_data))
 
     await session.commit()
-
-    # Seed Default Demo User (hero123 / password123)
-    user_res = await session.execute(select(User).filter(User.username == "hero123"))
-    if not user_res.scalars().first():
-        demo_user = User(
-            email="hero@liferpg.com",
-            username="hero123",
-            password_hash=get_password_hash("password123")
-        )
-        session.add(demo_user)
-        await session.commit()
-        await session.refresh(demo_user)
-
-        character = Character(user_id=demo_user.id, gold=100)
-        session.add(character)
-        await session.commit()
-        await session.refresh(character)
-
-        attrs_res = await session.execute(select(Attribute))
-        attrs = attrs_res.scalars().all()
-        for attr in attrs:
-            char_attr = CharacterAttribute(character_id=character.id, attribute_id=attr.id)
-            session.add(char_attr)
-        await session.commit()
-
-    print("Database successfully seeded with Attributes, Shop Items, and Demo User!")
+    print("Database successfully seeded with RPG Attributes and Shop Items!")
 
 if __name__ == "__main__":
     async def _main():

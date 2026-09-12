@@ -39,23 +39,10 @@ export const AuthModal: React.FC<{ onAuthSuccess: (user: User) => void }> = ({ o
             <Shield className="w-8 h-8" />
           </div>
           <h1 className="text-2xl font-extrabold tracking-wider bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-500 bg-clip-text text-transparent">
-            LIFE RPG ENGINE
+            PINNACLE
           </h1>
           <p className="text-xs text-gray-400 mt-1 font-mono">Gamify your daily tasks & level up real-world skills</p>
         </div>
-
-        {isLogin && (
-          <div className="mb-4 p-2.5 rounded-xl bg-amber-500/5 border border-amber-500/20 text-xs text-amber-300 font-mono flex items-center justify-between">
-            <span>Demo: <strong>hero123</strong> / <strong>password123</strong></span>
-            <button
-              type="button"
-              onClick={() => { setUsername('hero123'); setPassword('password123'); setError(null); }}
-              className="text-[10px] px-2 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 transition-colors uppercase font-bold"
-            >
-              Fill Demo
-            </button>
-          </div>
-        )}
 
         {error && (
           <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-mono">
@@ -72,7 +59,7 @@ export const AuthModal: React.FC<{ onAuthSuccess: (user: User) => void }> = ({ o
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="hero@liferpg.com"
+                placeholder="Enter your email"
                 className="w-full bg-black/50 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
               />
             </div>
@@ -87,7 +74,7 @@ export const AuthModal: React.FC<{ onAuthSuccess: (user: User) => void }> = ({ o
               required
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="hero123"
+              placeholder={isLogin ? "Enter your username or email" : "Choose a username"}
               className="w-full bg-black/50 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
             />
           </div>

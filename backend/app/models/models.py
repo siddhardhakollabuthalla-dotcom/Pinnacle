@@ -100,6 +100,8 @@ class QuestCompletion(Base):
     gold_awarded = Column(Integer, nullable=False)
     attribute_id = Column(String, nullable=True)
     streak_at_completion = Column(Integer, default=0, nullable=False)
+    proof_text = Column(Text, nullable=True)
+    proof_link = Column(String, nullable=True)
 
     quest = relationship("Quest", back_populates="completions")
 

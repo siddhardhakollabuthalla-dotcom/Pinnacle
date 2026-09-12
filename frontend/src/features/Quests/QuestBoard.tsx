@@ -1,7 +1,19 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Swords, Plus, CheckCircle2, Trash2, Flame, ShieldAlert } from 'lucide-react';
-import type { Quest, Attribute } from '../../types';
+import {
+  Swords,
+  Plus,
+  CheckCircle2,
+  Trash2,
+  Flame,
+  ShieldAlert,
+  ShieldCheck,
+  ExternalLink,
+  AlertCircle
+} from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../../api/client';
+import type { Quest, Attribute, QuestHistory } from '../../types';
 import { soundEngine } from '../../utils/soundEngine';
 
 export const DIFFICULTY_CONFIG: Record<string, { label: string; color: string; badgeClass: string; xp: number; stars: string }> = {
@@ -13,20 +25,120 @@ export const DIFFICULTY_CONFIG: Record<string, { label: string; color: string; b
   legendary: { label: 'LEGENDARY', color: '#eab308', badgeClass: 'border-yellow-400/60 text-yellow-300 bg-yellow-500/20 shadow-[0_0_15px_rgba(234,179,8,0.3)]', xp: 250, stars: '★★★★★' }
 };
 
+export const getProofGuidance = (quest: Quest) => {
+  const attrKey = quest.attribute?.key?.toLowerCase() || '';
+  const titleLower = quest.title.toLowerCase();
+
+  if (attrKey.includes('str') || titleLower.includes('workout') || titleLower.includes('gym') || titleLower.includes('pushup') || titleLower.includes('run')) {
+    return {
+      category: 'STRENGTH & PHYSICAL INTEGRITY',
+      colorBadge: 'border-rose-500/50 text-rose-400 bg-rose-500/10 shadow-[0_0_15px_rgba(244,63,94,0.2)]',
+      prompt: 'Document physical workout execution (exercises, sets, reps, weight, distance, or Strava activity).',
+      placeholder: 'e.g. 5x5 barbell squats @ 90kg, 4x10 pull-ups, completed 5km endurance run in 23m 40s.',
+      linkPlaceholder: 'https://strava.com/activities/... or workout log URL (optional)',
+      linkHint: 'Strava / Garmin / Apple Fitness / Workout Log'
+    };
+  }
+  if (attrKey.includes('int') || titleLower.includes('read') || titleLower.includes('study') || titleLower.includes('code') || titleLower.includes('learn')) {
+    return {
+      category: 'INTELLIGENCE & MASTERY',
+      colorBadge: 'border-blue-500/50 text-blue-400 bg-blue-500/10 shadow-[0_0_15px_rgba(59,130,246,0.2)]',
+      prompt: 'Summarize key concepts mastered, chapter summaries, problem solutions, or repository commits.',
+      placeholder: 'e.g. Completed Chapter 7 of System Design; solved 3 LeetCode Medium dynamic programming problems.',
+      linkPlaceholder: 'https://github.com/... or PR / Notion notes URL (optional)',
+      linkHint: 'GitHub PR / Commit / Notion / LeetCode link'
+    };
+  }
+  if (attrKey.includes('disc') || titleLower.includes('routine') || titleLower.includes('habit') || titleLower.includes('wake')) {
+    return {
+      category: 'DISCIPLINE & HABIT EXECUTION',
+      colorBadge: 'border-amber-500/50 text-amber-400 bg-amber-500/10 shadow-[0_0_15px_rgba(245,158,11,0.2)]',
+      prompt: 'Specify exact timestamps, checklist adherence, and streak consistency details.',
+      placeholder: 'e.g. Awoke at 06:00, completed 15min mindfulness meditation, made bed, zero phone usage before 9 AM.',
+      linkPlaceholder: 'Optional habit tracking link or daily journal log',
+      linkHint: 'Habit tracker / Daily journal reference'
+    };
+  }
+  if (attrKey.includes('creat') || titleLower.includes('design') || titleLower.includes('art') || titleLower.includes('music') || titleLower.includes('write')) {
+    return {
+      category: 'CREATIVITY & CRAFTSMANSHIP',
+      colorBadge: 'border-purple-500/50 text-purple-400 bg-purple-500/10 shadow-[0_0_15px_rgba(168,85,247,0.2)]',
+      prompt: 'Describe creative output, design artifacts, or project milestones achieved.',
+      placeholder: 'e.g. Drafted complete cyberpunk UI design system in Figma with 12 reusable chamfered card components.',
+      linkPlaceholder: 'https://figma.com/file/... or Dribbble / portfolio URL (optional)',
+      linkHint: 'Figma / CodeSandbox / Dribbble / Portfolio link'
+    };
+  }
+  if (attrKey.includes('vit') || titleLower.includes('sleep') || titleLower.includes('water') || titleLower.includes('diet') || titleLower.includes('health')) {
+    return {
+      category: 'VITALITY & BIOMETRIC RECOVERY',
+      colorBadge: 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.2)]',
+      prompt: 'Log recovery biometrics, sleep duration, hydration target reached, or clean nutrition notes.',
+      placeholder: 'e.g. Slept 8.2 hours (92% sleep quality score on tracker), drank 3.5L of water, hit all macro targets.',
+      linkPlaceholder: 'Optional health app screenshot or tracking log URL',
+      linkHint: 'Sleep tracker / Health app / Nutrition log'
+    };
+  }
+  if (attrKey.includes('foc') || titleLower.includes('deep') || titleLower.includes('pomodoro')) {
+    return {
+      category: 'FOCUS & DEEP COGNITION',
+      colorBadge: 'border-cyan-500/50 text-cyan-400 bg-cyan-500/10 shadow-[0_0_15px_rgba(6,182,212,0.2)]',
+      prompt: 'Log uninterrupted Pomodoro blocks, time spent without distraction, and tasks completed.',
+      placeholder: 'e.g. Completed two 90-minute hyperfocus blocks with airplane mode enabled; shipped new API endpoints.',
+      linkPlaceholder: 'Optional session report or time tracking URL',
+      linkHint: 'Toggl / Forest / Session summary link'
+    };
+  }
+  if (attrKey.includes('conf') || titleLower.includes('speak') || titleLower.includes('lead') || titleLower.includes('pitch')) {
+    return {
+      category: 'CONFIDENCE & COURAGE',
+      colorBadge: 'border-orange-500/50 text-orange-400 bg-orange-500/10 shadow-[0_0_15px_rgba(249,115,22,0.2)]',
+      prompt: 'Reflect on stepping out of comfort zone, leadership initiative, or public speaking event.',
+      placeholder: 'e.g. Gave a 20-minute technical talk in team demo meeting and answered unscripted questions.',
+      linkPlaceholder: 'Optional presentation slides or recording link',
+      linkHint: 'Slides / Recording / Meeting notes link'
+    };
+  }
+  return {
+    category: 'MISSION VERIFICATION & AUDIT',
+    colorBadge: 'border-amber-500/50 text-amber-400 bg-amber-500/10 shadow-[0_0_15px_rgba(245,158,11,0.2)]',
+    prompt: 'Provide verifiable summary notes or evidence demonstrating authentic completion of this mission.',
+    placeholder: 'e.g. Fully accomplished all mission objectives, verified edge conditions, and fulfilled deliverables.',
+    linkPlaceholder: 'https://... or documentation reference link (optional)',
+    linkHint: 'Documentation / PR / External evidence link'
+  };
+};
+
 export const QuestBoard: React.FC<{
   quests: Quest[];
   attributes: Attribute[];
   onCreateQuest: (data: any) => Promise<void>;
-  onCompleteQuest: (questId: string, event: React.MouseEvent) => Promise<void>;
+  onCompleteQuest: (
+    questId: string,
+    proof: { proof_text: string; proof_link?: string },
+    event?: React.MouseEvent
+  ) => Promise<void>;
   onDeleteQuest: (questId: string) => Promise<void>;
 }> = ({ quests, attributes, onCreateQuest, onCompleteQuest, onDeleteQuest }) => {
   const [showModal, setShowModal] = useState(false);
+  const [questForProof, setQuestForProof] = useState<Quest | null>(null);
+  const [proofText, setProofText] = useState('');
+  const [proofLink, setProofLink] = useState('');
+  const [proofError, setProofError] = useState('');
+  const [isSubmittingProof, setIsSubmittingProof] = useState(false);
+  const [proofTriggerEvent, setProofTriggerEvent] = useState<React.MouseEvent | undefined>(undefined);
+
   const [filterTab, setFilterTab] = useState<'active' | 'completed'>('active');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [difficulty, setDifficulty] = useState('medium');
   const [attributeId, setAttributeId] = useState('');
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
+
+  const { data: history = [] } = useQuery<QuestHistory[]>({
+    queryKey: ['history'],
+    queryFn: api.getHistory,
+  });
 
   const handleAction = async (questId: string, action: () => Promise<void>) => {
     if (processingIds.has(questId)) return;
@@ -39,6 +151,45 @@ export const QuestBoard: React.FC<{
         next.delete(questId);
         return next;
       });
+    }
+  };
+
+  const handleOpenProofModal = (quest: Quest, e?: React.MouseEvent) => {
+    soundEngine.play('click');
+    setQuestForProof(quest);
+    setProofText('');
+    setProofLink('');
+    setProofError('');
+    setProofTriggerEvent(e);
+  };
+
+  const handleVerifyAndComplete = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!questForProof) return;
+    const trimmed = proofText.trim();
+    if (trimmed.length < 5) {
+      setProofError('Proof description must be at least 5 characters to verify.');
+      return;
+    }
+
+    setIsSubmittingProof(true);
+    setProofError('');
+    try {
+      await onCompleteQuest(
+        questForProof.id,
+        {
+          proof_text: trimmed,
+          proof_link: proofLink.trim() || undefined,
+        },
+        proofTriggerEvent
+      );
+      setQuestForProof(null);
+      setProofText('');
+      setProofLink('');
+    } catch (err: any) {
+      setProofError(err?.message || 'Failed to complete quest');
+    } finally {
+      setIsSubmittingProof(false);
     }
   };
 
@@ -183,20 +334,15 @@ export const QuestBoard: React.FC<{
                     ) : (
                       <button
                         disabled={isBusy}
-                        onClick={(e) => {
-                          handleAction(quest.id, async () => {
-                            soundEngine.play('quest_complete');
-                            await onCompleteQuest(quest.id, e);
-                          });
-                        }}
+                        onClick={(e) => handleOpenProofModal(quest, e)}
                         className="mt-0.5 w-10 h-10 rounded-xl border-2 border-amber-500/50 hover:border-amber-400 bg-amber-500/10 flex items-center justify-center text-amber-400 hover:scale-110 transition-transform shadow-[0_0_15px_rgba(245,158,11,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Complete Quest"
+                        title="Submit Proof & Complete Quest"
                       >
                         <CheckCircle2 className="w-6 h-6" />
                       </button>
                     )}
 
-                    <div className="space-y-1">
+                    <div className="space-y-1 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs font-mono text-zinc-500 font-bold uppercase tracking-wider">
                           {isCompleted ? '🏆 COMPLETED' : '⚔ QUEST'}
@@ -222,6 +368,34 @@ export const QuestBoard: React.FC<{
                           </>
                         )}
                       </div>
+
+                      {/* Verified Proof Evidence in History */}
+                      {isCompleted && (() => {
+                        const rec = history.find((h) => h.quest_id === quest.id);
+                        if (!rec?.proof_text) return null;
+                        return (
+                          <div className="mt-2.5 p-2.5 rounded-xl bg-emerald-950/30 border border-emerald-500/30 text-xs font-mono space-y-1">
+                            <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-[10px] uppercase tracking-wider">
+                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>Verified Proof Evidence:</span>
+                            </div>
+                            <p className="text-zinc-300 font-sans text-xs">
+                              "{rec.proof_text}"
+                            </p>
+                            {rec.proof_link && (
+                              <a
+                                href={rec.proof_link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 hover:underline text-[11px] font-mono mt-0.5 truncate max-w-full"
+                              >
+                                <ExternalLink className="w-3 h-3 shrink-0" />
+                                <span className="truncate">{rec.proof_link}</span>
+                              </a>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -229,21 +403,16 @@ export const QuestBoard: React.FC<{
                     {!isCompleted && (
                       <button
                         disabled={isBusy}
-                        onClick={(e) => {
-                          handleAction(quest.id, async () => {
-                            soundEngine.play('quest_complete');
-                            await onCompleteQuest(quest.id, e);
-                          });
-                        }}
+                        onClick={(e) => handleOpenProofModal(quest, e)}
                         className="btn-game-primary py-2.5 px-4 text-xs font-bold uppercase tracking-wider rounded-xl shadow flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        [ ✓ COMPLETE QUEST ]
+                        <ShieldCheck className="w-4 h-4" /> [ COMPLETE MISSION ]
                       </button>
                     )}
 
                     {isCompleted && (
-                      <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-xl font-bold uppercase tracking-wider flex items-center gap-1">
-                        ✓ COMPLETED
+                      <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-xl font-bold uppercase tracking-wider flex items-center gap-1.5">
+                        <ShieldCheck className="w-4 h-4 text-emerald-400" /> ✓ VERIFIED
                       </span>
                     )}
 
@@ -354,6 +523,132 @@ export const QuestBoard: React.FC<{
                 </button>
               </div>
             </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Proof Submission & Verification Modal */}
+      {questForProof && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="w-full max-w-lg game-panel-gold rounded-3xl p-6 border-2 border-amber-500/60 shadow-[0_0_50px_rgba(245,158,11,0.3)] text-white space-y-4"
+          >
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-400">
+                  <ShieldCheck className="w-6 h-6 text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold font-game-title text-amber-400">
+                    MISSION COMPLETION AUDIT
+                  </h3>
+                  <p className="text-[10px] font-mono text-zinc-400 tracking-wider">
+                    PINNACLE ANTI-CHEAT VERIFICATION PROTOCOL
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setQuestForProof(null)}
+                className="text-zinc-400 hover:text-white font-mono text-sm p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Quest Overview Badge */}
+            <div className="bg-black/60 border border-white/10 rounded-2xl p-3.5 space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-mono text-zinc-400 uppercase font-bold">Target Mission:</span>
+                <span className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded border ${(DIFFICULTY_CONFIG[questForProof.difficulty] || DIFFICULTY_CONFIG.medium).badgeClass}`}>
+                  {(DIFFICULTY_CONFIG[questForProof.difficulty] || DIFFICULTY_CONFIG.medium).stars} {(DIFFICULTY_CONFIG[questForProof.difficulty] || DIFFICULTY_CONFIG.medium).label}
+                </span>
+              </div>
+              <h4 className="text-base font-bold font-game-title text-white">
+                {questForProof.title}
+              </h4>
+              {questForProof.description && (
+                <p className="text-xs text-zinc-400 font-sans">{questForProof.description}</p>
+              )}
+            </div>
+
+            {/* Dynamic Attribute Specific Proof Guidelines */}
+            {(() => {
+              const guidance = getProofGuidance(questForProof);
+              return (
+                <form onSubmit={handleVerifyAndComplete} className="space-y-4">
+                  <div className="p-3 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded border ${guidance.colorBadge}`}>
+                        {guidance.category}
+                      </span>
+                    </div>
+                    <p className="text-xs text-zinc-300 font-sans">
+                      {guidance.prompt}
+                    </p>
+                  </div>
+
+                  {proofError && (
+                    <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-xs font-mono text-red-400 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{proofError}</span>
+                    </div>
+                  )}
+
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-xs font-mono text-amber-300 uppercase font-bold">
+                        Proof & Verification Summary *
+                      </label>
+                      <span className={`text-[10px] font-mono ${proofText.trim().length >= 5 ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                        {proofText.trim().length}/1000 (min 5 chars)
+                      </span>
+                    </div>
+                    <textarea
+                      required
+                      value={proofText}
+                      onChange={(e) => setProofText(e.target.value)}
+                      placeholder={guidance.placeholder}
+                      className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500 h-24 resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-mono text-zinc-400 uppercase mb-1 flex items-center justify-between">
+                      <span>External Verification Link (Optional)</span>
+                      <span className="text-[10px] text-zinc-500 lowercase">{guidance.linkHint}</span>
+                    </label>
+                    <input
+                      type="url"
+                      value={proofLink}
+                      onChange={(e) => setProofLink(e.target.value)}
+                      placeholder={guidance.linkPlaceholder}
+                      className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+                    <button
+                      type="button"
+                      disabled={isSubmittingProof}
+                      onClick={() => setQuestForProof(null)}
+                      className="px-4 py-2.5 rounded-xl border border-white/10 text-xs font-mono font-bold text-zinc-400 hover:text-white transition-colors"
+                    >
+                      CANCEL
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={proofText.trim().length < 5 || isSubmittingProof}
+                      className="btn-game-primary py-2.5 px-6 text-xs tracking-wider rounded-xl shadow flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <ShieldCheck className="w-4 h-4" />
+                      {isSubmittingProof ? 'VERIFYING...' : '[ ✓ VERIFY & COMPLETE MISSION ]'}
+                    </button>
+                  </div>
+                </form>
+              );
+            })()}
           </motion.div>
         </div>
       )}

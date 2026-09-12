@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from app.core.database import get_db
 from app.api.auth import get_current_user
 from app.models.models import User, Character, Quest, QuestCompletion, Attribute, CharacterAttribute, GoldTransaction
-from app.schemas.schemas import QuestCreate, QuestUpdate, QuestOut, QuestCompletionResult, AttributeOut
+from app.schemas.schemas import QuestCreate, QuestUpdate, QuestOut, QuestCompletionResult, AttributeOut, QuestCompleteRequest
 from app.services.progression import (
     calculate_rewards, update_streak, award_xp_and_gold, award_attribute_xp
 )
@@ -162,6 +162,7 @@ async def delete_quest(
 @router.post("/{quest_id}/complete", response_model=QuestCompletionResult)
 async def complete_quest(
     quest_id: str,
+    complete_in: Optional[QuestCompleteRequest] = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -175,6 +176,16 @@ async def complete_quest(
 
     if quest.status == "completed" and not quest.is_recurring:
         raise HTTPException(status_code=400, detail="Quest already completed")
+
+    # Anti-cheat proof verification
+    if not complete_in or not complete_in.proof_text or len(complete_in.proof_text.strip()) < 5:
+        raise HTTPException(
+            status_code=400,
+            detail="Verification proof is required to complete this quest (minimum 5 characters)."
+        )
+
+    proof_text = complete_in.proof_text.strip()
+    proof_link = complete_in.proof_link.strip() if complete_in.proof_link else None
 
     # 2. Fetch character state
     char_result = await db.execute(
@@ -213,7 +224,7 @@ async def complete_quest(
         
         attr_leveled_up, new_attr_level = award_attribute_xp(char_attr, xp_awarded)
 
-    # 7. Record Completion Audit Log
+    # 7. Record Completion Audit Log with Verifiable Proof
     completion = QuestCompletion(
         quest_id=quest.id,
         user_id=current_user.id,
@@ -221,7 +232,9 @@ async def complete_quest(
         xp_awarded=xp_awarded,
         gold_awarded=gold_awarded,
         attribute_id=quest.attribute_id,
-        streak_at_completion=current_streak
+        streak_at_completion=current_streak,
+        proof_text=proof_text,
+        proof_link=proof_link
     )
     db.add(completion)
 
@@ -251,5 +264,7 @@ async def complete_quest(
         new_level=new_level,
         current_streak=current_streak,
         attribute_leveled_up=attr_leveled_up,
-        new_attribute_level=new_attr_level
+        new_attribute_level=new_attr_level,
+        proof_text=proof_text,
+        proof_link=proof_link
     )

@@ -5,9 +5,11 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 
 from app.main import app
 from app.core.database import get_db
-from app.models.models import Base
+from app.models.models import Base, User, Character, Attribute, CharacterAttribute
+from app.core.security import get_password_hash
 from app.services.progression import calculate_rewards, xp_to_next_level, update_streak
 from seed import seed_data
+from sqlalchemy.future import select
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
@@ -26,6 +28,25 @@ async def init_db_fixture():
         await conn.run_sync(Base.metadata.create_all)
     async with TestingSessionLocal() as session:
         await seed_data(session)
+        # Create test user for tests
+        test_user = User(
+            email="hero@liferpg.com",
+            username="hero123",
+            password_hash=get_password_hash("password123")
+        )
+        session.add(test_user)
+        await session.commit()
+        await session.refresh(test_user)
+
+        char = Character(user_id=test_user.id, gold=100)
+        session.add(char)
+        await session.commit()
+        await session.refresh(char)
+
+        attrs = (await session.execute(select(Attribute))).scalars().all()
+        for attr in attrs:
+            session.add(CharacterAttribute(character_id=char.id, attribute_id=attr.id))
+        await session.commit()
     yield
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -112,12 +133,16 @@ async def test_character_and_quests_flow(init_db_fixture):
         all_quests = await ac.get("/quests?status_filter=all")
         assert len(all_quests.json()) >= 1
 
-        # Complete Quest
-        comp_res = await ac.post(f"/quests/{q1['id']}/complete")
+        # Complete Quest with Proof
+        comp_res = await ac.post(f"/quests/{q1['id']}/complete", json={
+            "proof_text": "Finished reading 30 pages and wrote detailed summary notes",
+            "proof_link": "https://github.com/notes"
+        })
         assert comp_res.status_code == 200
         comp_data = comp_res.json()
         assert comp_data["quest_id"] == q1["id"]
         assert comp_data["xp_awarded"] > 0
+        assert comp_data["proof_text"] == "Finished reading 30 pages and wrote detailed summary notes"
 
         # Try completing non-recurring completed quest again -> 400
         comp_again = await ac.post(f"/quests/{q1['id']}/complete")
@@ -127,6 +152,7 @@ async def test_character_and_quests_flow(init_db_fixture):
         hist_res = await ac.get("/history")
         assert hist_res.status_code == 200
         assert len(hist_res.json()) >= 1
+        assert hist_res.json()[0]["proof_text"] == "Finished reading 30 pages and wrote detailed summary notes"
 
 @pytest.mark.asyncio
 async def test_shop_and_inventory_flow(init_db_fixture):
@@ -182,18 +208,27 @@ async def test_legendary_quest_and_leaderboard(init_db_fixture):
         leg_data = leg_q.json()
         assert leg_data["difficulty"] == "legendary"
 
-        # 3. Complete Legendary Quest
-        comp_res = await ac.post(f"/quests/{leg_data['id']}/complete")
+        # 3. Complete Legendary Quest without proof -> fails with 400 anti-cheat
+        fail_res = await ac.post(f"/quests/{leg_data['id']}/complete")
+        assert fail_res.status_code == 400
+        assert "Verification proof is required" in fail_res.json()["detail"]
+
+        # 3b. Complete Legendary Quest with proof -> succeeds
+        comp_res = await ac.post(f"/quests/{leg_data['id']}/complete", json={
+            "proof_text": "Built resilient multi-region raft consensus cluster with chaos testing verification",
+            "proof_link": "https://github.com/my-raft-cluster"
+        })
         assert comp_res.status_code == 200
         comp_data = comp_res.json()
         assert comp_data["xp_awarded"] >= 250
         assert comp_data["gold_awarded"] >= 60
+        assert comp_data["proof_text"] == "Built resilient multi-region raft consensus cluster with chaos testing verification"
 
         # 4. Check Leaderboard
         lead_res = await ac.get("/character/leaderboard")
         assert lead_res.status_code == 200
         leaderboard = lead_res.json()
-        assert len(leaderboard) >= 5
+        assert len(leaderboard) >= 1
         # Verify ranks are sequential 1, 2, 3...
         for idx, entry in enumerate(leaderboard, start=1):
             assert entry["rank"] == idx

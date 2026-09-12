@@ -91,15 +91,6 @@ async def get_leaderboard(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    # Benchmark competitors
-    benchmark_players = [
-        {"name": "VORTEX_SHADOW", "level": 42, "xp": 14250, "streak": 28},
-        {"name": "CYBER_HERO", "level": 38, "xp": 11820, "streak": 19},
-        {"name": "NEON_KNIGHT", "level": 22, "xp": 6450, "streak": 12},
-        {"name": "TITAN_GRIND", "level": 19, "xp": 5120, "streak": 8},
-        {"name": "VALKYRIE_99", "level": 15, "xp": 3800, "streak": 6},
-    ]
-
     # Fetch all real users with their characters
     result = await db.execute(
         select(User, Character)
@@ -108,8 +99,6 @@ async def get_leaderboard(
     user_char_pairs = result.all()
 
     all_players = []
-    seen_names = set()
-
     for user, character in user_char_pairs:
         all_players.append({
             "name": user.username,
@@ -118,24 +107,13 @@ async def get_leaderboard(
             "streak": character.current_streak,
             "is_current": (user.id == current_user.id)
         })
-        seen_names.add(user.username.lower())
-
-    for bp in benchmark_players:
-        if bp["name"].lower() not in seen_names:
-            all_players.append({
-                "name": bp["name"],
-                "level": bp["level"],
-                "xp": bp["xp"],
-                "streak": bp["streak"],
-                "is_current": False
-            })
 
     # Sort descending by XP, then level, then streak
     all_players.sort(key=lambda p: (p["xp"], p["level"], p["streak"]), reverse=True)
 
     # Assign ranks
     out = []
-    for idx, p in enumerate(all_players[:10], start=1):
+    for idx, p in enumerate(all_players[:50], start=1):
         out.append(LeaderboardUserOut(
             rank=idx,
             name=p["name"],

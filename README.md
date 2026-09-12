@@ -22,6 +22,9 @@
 - 🛍️ **Item Shop & Inventory**: Purchase custom themes (*Cyberpunk*, *16-Bit Dungeon*, *Cozy Lo-Fi*) and cosmetic badges using in-game gold.
 - 🚀 **Optimistic UI Engine**: Zero UI delay powered by React Query optimistic state updates and Web Audio API SFX synthesis.
 - 🔒 **Cookie & Bearer Auth**: Secure JWT session management supporting both HTTP-Only cookies and Authorization headers.
+- 🛡️ **Anti-Cheat Proof System**: Verifiable completion evidence required before rewards are awarded.
+
+👉 **Looking for an in-depth technical breakdown?** Check out the [Full System Architecture & Explanation Guide](DOCUMENTATION.md) for complete backend, frontend, database schema, mathematical progression curves, and sequence diagrams.
 
 ---
 
@@ -67,16 +70,12 @@ source venv/bin/activate
 # Install backend dependencies
 pip install -r requirements.txt
 
-# Seed database with default attributes, shop items & demo user
+# Seed database with RPG attributes & shop items
 python seed.py
 
 # Run FastAPI backend server
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
-
-> 🔑 **Default Demo Credentials**:
-> - **Username**: `hero123`
-> - **Password**: `password123`
 
 ---
 

@@ -90,6 +90,10 @@ class QuestOut(BaseModel):
     due_at: Optional[datetime]
     created_at: datetime
 
+class QuestCompleteRequest(BaseModel):
+    proof_text: str = Field(..., min_length=5, max_length=1000, description="Verification evidence or summary of quest completion")
+    proof_link: Optional[str] = Field(None, max_length=500, description="Optional link to work, repository, Strava, or documentation")
+
 class QuestCompletionResult(BaseModel):
     quest_id: str
     xp_awarded: int
@@ -99,6 +103,8 @@ class QuestCompletionResult(BaseModel):
     current_streak: int
     attribute_leveled_up: bool = False
     new_attribute_level: Optional[int] = None
+    proof_text: Optional[str] = None
+    proof_link: Optional[str] = None
 
 # Shop & Inventory Schemas
 class ItemOut(BaseModel):
@@ -125,6 +131,8 @@ class HistoryOut(BaseModel):
     gold_awarded: int
     streak_at_completion: int
     quest_title: Optional[str] = None
+    proof_text: Optional[str] = None
+    proof_link: Optional[str] = None
 
 class LeaderboardUserOut(BaseModel):
     rank: int

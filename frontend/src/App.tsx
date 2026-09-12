@@ -65,8 +65,9 @@ export const App: React.FC = () => {
 
   // Complete Quest Mutation
   const completeMutation = useMutation({
-    mutationFn: (questId: string) => api.completeQuest(questId),
-    onMutate: async (questId) => {
+    mutationFn: ({ questId, proof }: { questId: string; proof: { proof_text: string; proof_link?: string } }) =>
+      api.completeQuest(questId, proof),
+    onMutate: async ({ questId }) => {
       await queryClient.cancelQueries({ queryKey: ['quests'] });
       const previousQuests = queryClient.getQueryData<Quest[]>(['quests', 'all']);
 
@@ -183,7 +184,11 @@ export const App: React.FC = () => {
     },
   });
 
-  const handleCompleteQuest = async (questId: string, e: React.MouseEvent) => {
+  const handleCompleteQuest = async (
+    questId: string,
+    proof: { proof_text: string; proof_link?: string },
+    e?: React.MouseEvent
+  ) => {
     const targetQuest = quests.find((q) => q.id === questId);
     const xpMap: Record<string, number> = {
       trivial: 5,
@@ -194,8 +199,12 @@ export const App: React.FC = () => {
       legendary: 250,
     };
     const xpGain = targetQuest ? (xpMap[targetQuest.difficulty] || 30) : 30;
-    addFloatingXp(`+${xpGain} XP`, e.clientX, e.clientY);
-    completeMutation.mutate(questId);
+    if (e) {
+      addFloatingXp(`+${xpGain} XP`, e.clientX, e.clientY);
+    } else {
+      addFloatingXp(`+${xpGain} XP`, window.innerWidth / 2, window.innerHeight / 2);
+    }
+    await completeMutation.mutateAsync({ questId, proof });
   };
 
   const handleCreateQuest = async (data: any) => {
@@ -217,7 +226,7 @@ export const App: React.FC = () => {
   if (userLoading) {
     return (
       <div className="min-h-screen bg-[#050609] flex items-center justify-center text-amber-400 font-game-title text-sm tracking-widest">
-        INITIALIZING LEVEL_up GAME ENGINE...
+        INITIALIZING PINNACLE GAME ENGINE...
       </div>
     );
   }
