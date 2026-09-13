@@ -18,15 +18,6 @@ export const AuthModal: React.FC<{
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-
-    if (!isLogin) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email.trim())) {
-        setError('Please enter a valid, authentic email address (e.g., user@example.com).');
-        return;
-      }
-    }
-
     setLoading(true);
 
     try {
@@ -34,11 +25,12 @@ export const AuthModal: React.FC<{
         const res = await api.login({ username_or_email: username || email, password });
         onAuthSuccess(res.user);
       } else {
-        const user = await api.signup({ email: email.trim(), username: username.trim(), password });
+        const user = await api.signup({ email, username, password });
         onAuthSuccess(user);
       }
     } catch (err: any) {
       setError(err.message || 'Authentication failed');
+    } finally {
       setLoading(false);
     }
   };
