@@ -74,18 +74,19 @@ export const GameHUD: React.FC<{
     <header className="sticky top-0 z-40 bg-[#07080d]/90 border-b border-cyan-500/20 backdrop-blur-2xl px-4 py-2.5 shadow-[0_4px_25px_rgba(0,0,0,0.8)]">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
         {/* Top-Left: PLAYER AVATAR & LEVEL HUD (Click to view Profile) */}
-        <div
+        <button
+          type="button"
           onClick={() => {
             if (onOpenProfile) {
               soundEngine.play('click');
               onOpenProfile();
             }
           }}
-          className="flex items-center gap-3 cursor-pointer group hover:opacity-90 transition-all p-1 rounded-xl hover:bg-white/5"
-          title="Click to view Player Profile"
+          className="flex items-center gap-3 cursor-pointer group transition-all p-1.5 rounded-2xl hover:bg-amber-500/10 border border-transparent hover:border-amber-500/40 text-left focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+          title="Click to open Player Profile"
         >
           <div className="relative">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 via-amber-600 to-yellow-700 p-0.5 shadow-[0_0_15px_rgba(245,158,11,0.4)] group-hover:scale-105 transition-transform">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 via-amber-600 to-yellow-700 p-0.5 shadow-[0_0_15px_rgba(245,158,11,0.4)] group-hover:shadow-[0_0_25px_rgba(245,158,11,0.8)] group-hover:scale-105 transition-all">
               <div className="w-full h-full bg-[#090b14] rounded-[10px] flex items-center justify-center text-amber-400 font-bold">
                 <RankBadgeIcon material={rankInfo.currentRank.material} subRank={rankInfo.currentRank.subRank} size="sm" />
               </div>
@@ -118,7 +119,7 @@ export const GameHUD: React.FC<{
               <span className="text-[9px] font-mono text-amber-300 font-bold">{xpPct}%</span>
             </div>
           </div>
-        </div>
+        </button>
 
         {/* Top-Right: TROPHIES 🏆, COINS 🪙, GEMS 💎, STREAK 🔥 HUD */}
         <div className="flex items-center gap-3">
