@@ -9,7 +9,10 @@ import {
   ShieldAlert,
   ShieldCheck,
   ExternalLink,
-  AlertCircle
+  AlertCircle,
+  Clock,
+  Play,
+  RotateCcw
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client';
@@ -128,6 +131,8 @@ export const QuestBoard: React.FC<{
   const [isSubmittingProof, setIsSubmittingProof] = useState(false);
   const [proofTriggerEvent, setProofTriggerEvent] = useState<React.MouseEvent | undefined>(undefined);
 
+  const [timeLimitMinutes, setTimeLimitMinutes] = useState<number | ''>('');
+  const [activeTimers, setActiveTimers] = useState<Record<string, { startTime: number; durationSeconds: number; elapsedSeconds: number }>>({});
   const [filterTab, setFilterTab] = useState<'active' | 'completed'>('active');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -136,6 +141,67 @@ export const QuestBoard: React.FC<{
   const [isRecurring, setIsRecurring] = useState(false);
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
+
+  // Load saved timer state from localStorage
+  React.useEffect(() => {
+    const saved = localStorage.getItem('pinnacle_quest_timers');
+    if (saved) {
+      try {
+        setActiveTimers(JSON.parse(saved));
+      } catch {
+        // ignore JSON errors
+      }
+    }
+  }, []);
+
+  // Save activeTimers to localStorage
+  React.useEffect(() => {
+    localStorage.setItem('pinnacle_quest_timers', JSON.stringify(activeTimers));
+  }, [activeTimers]);
+
+  // Interval timer tick
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveTimers((prev) => {
+        const next = { ...prev };
+        let updated = false;
+        Object.keys(next).forEach((questId) => {
+          const timer = next[questId];
+          const now = Math.floor(Date.now() / 1000);
+          const elapsed = now - timer.startTime;
+          if (elapsed !== timer.elapsedSeconds) {
+            next[questId] = { ...timer, elapsedSeconds: elapsed };
+            updated = true;
+          }
+        });
+        return updated ? next : prev;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleStartQuestTimer = (questId: string, durationMins?: number) => {
+    soundEngine.play('click');
+    const now = Math.floor(Date.now() / 1000);
+    const durationSec = (durationMins || 25) * 60;
+    setActiveTimers((prev) => ({
+      ...prev,
+      [questId]: {
+        startTime: now,
+        durationSeconds: durationSec,
+        elapsedSeconds: 0,
+      },
+    }));
+  };
+
+  const handlePauseOrResetTimer = (questId: string) => {
+    soundEngine.play('click');
+    setActiveTimers((prev) => {
+      const next = { ...prev };
+      delete next[questId];
+      return next;
+    });
+  };
 
   const DAYS_OF_WEEK = [
     { key: 'Mon', label: 'M' },
@@ -431,7 +497,50 @@ export const QuestBoard: React.FC<{
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end gap-3 pt-3 md:pt-0 border-t md:border-t-0 border-white/10">
+                  <div className="flex items-center justify-end gap-3 pt-3 md:pt-0 border-t md:border-t-0 border-white/10 flex-wrap">
+                    {!isCompleted && (() => {
+                      const activeTimer = activeTimers[quest.id];
+                      if (activeTimer) {
+                        const remaining = Math.max(0, activeTimer.durationSeconds - activeTimer.elapsedSeconds);
+                        const isExpired = remaining <= 0;
+                        const mins = Math.floor(remaining / 60);
+                        const secs = remaining % 60;
+                        const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+                        return (
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`px-3 py-1.5 rounded-xl border font-mono text-xs font-bold flex items-center gap-2 shadow-[0_0_15px_rgba(245,158,11,0.3)] ${
+                                isExpired
+                                  ? 'bg-rose-500/20 border-rose-500/60 text-rose-400 animate-pulse'
+                                  : 'bg-amber-500/20 border-amber-500/50 text-amber-300'
+                              }`}
+                            >
+                              <Clock className={`w-3.5 h-3.5 ${isExpired ? 'text-rose-400' : 'text-amber-400 animate-spin'}`} />
+                              <span>{isExpired ? 'TIME EXPIRED ⏰' : `COUNTDOWN: ${timeStr}`}</span>
+                            </div>
+                            <button
+                              onClick={() => handlePauseOrResetTimer(quest.id)}
+                              className="p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-zinc-400 hover:text-white"
+                              title="Reset Timer"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <button
+                          onClick={() => handleStartQuestTimer(quest.id, timeLimitMinutes || 25)}
+                          className="px-3 py-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 font-mono text-xs font-bold transition-all flex items-center gap-1.5 group"
+                        >
+                          <Play className="w-3.5 h-3.5 fill-cyan-400 group-hover:scale-110 transition-transform" />
+                          <span>GET STARTED TIMER</span>
+                        </button>
+                      );
+                    })()}
+
                     {!isCompleted && (
                       <button
                         disabled={isBusy}
@@ -506,7 +615,7 @@ export const QuestBoard: React.FC<{
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-mono text-zinc-400 uppercase mb-1">Difficulty Rank</label>
                   <select
@@ -536,6 +645,21 @@ export const QuestBoard: React.FC<{
                       </option>
                     ))}
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono text-amber-400 uppercase mb-1 flex items-center gap-1 font-bold">
+                    <Clock className="w-3.5 h-3.5" /> Time Limit (Mins)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="1440"
+                    value={timeLimitMinutes}
+                    onChange={(e) => setTimeLimitMinutes(e.target.value ? Number(e.target.value) : '')}
+                    placeholder="e.g. 30"
+                    className="w-full bg-black/60 border border-amber-500/30 rounded-xl px-3 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500"
+                  />
                 </div>
               </div>
 
