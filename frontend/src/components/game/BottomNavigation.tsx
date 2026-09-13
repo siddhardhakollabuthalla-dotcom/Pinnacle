@@ -11,7 +11,7 @@ export const BottomNavigation: React.FC<{
   const tabs: { id: NavTab; label: string; icon: React.ReactNode }[] = [
     { id: 'lobby', label: 'HOME', icon: <Home className="w-5 h-5" /> },
     { id: 'quests', label: 'QUESTS', icon: <Swords className="w-5 h-5" /> },
-    { id: 'character', label: 'HERO', icon: <User className="w-5 h-5" /> },
+    { id: 'character', label: 'PROFILE', icon: <User className="w-5 h-5" /> },
     { id: 'battlepass', label: 'PASS', icon: <Gift className="w-5 h-5" /> },
     { id: 'inventory', label: 'ARMORY', icon: <ShoppingBag className="w-5 h-5" /> },
     { id: 'achievements', label: 'TROPHY', icon: <Award className="w-5 h-5" /> },
