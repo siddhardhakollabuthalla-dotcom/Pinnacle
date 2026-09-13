@@ -1,17 +1,62 @@
 import React, { useState } from 'react';
-import { Coins, Gem, Flame, Trophy, Bell, Volume2, VolumeX } from 'lucide-react';
-import type { User, Character } from '../../types';
+import { Coins, Gem, Flame, Trophy, Bell, Volume2, VolumeX, X, CheckCheck, Sparkles, Shield } from 'lucide-react';
+import type { User, Character, GameNotification } from '../../types';
 import { soundEngine } from '../../utils/soundEngine';
 import { getRankInfo } from '../../utils/rankingSystem';
 import { RankBadgeIcon } from './RankBadgeIcon';
 
 export const GameHUD: React.FC<{ user: User; character?: Character }> = ({ user, character }) => {
   const [soundOn, setSoundOn] = useState(soundEngine.isEnabled());
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const [notifications, setNotifications] = useState<GameNotification[]>([
+    {
+      id: 'n1',
+      title: 'Welcome to Pinnacle RPG!',
+      message: `Welcome back, ${user.username}. Prepare to conquer daily quests and level up your life.`,
+      timestamp: 'Just now',
+      type: 'system',
+      read: false,
+    },
+    {
+      id: 'n2',
+      title: 'Daily Streak Bonus Active',
+      message: `You are currently on a ${character?.current_streak || 1} day streak! Keep it up to earn XP bonus multipliers.`,
+      timestamp: '2 hours ago',
+      type: 'streak',
+      read: false,
+    },
+    {
+      id: 'n3',
+      title: 'Rank Progress Updated',
+      message: `Current Power Rating Level: ${character?.level || 1}. Complete quests to climb the global Leaderboard!`,
+      timestamp: '5 hours ago',
+      type: 'level_up',
+      read: false,
+    },
+  ]);
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   const handleToggleSound = () => {
     const newState = soundEngine.toggleSound();
     setSoundOn(newState);
     if (newState) soundEngine.play('click');
+  };
+
+  const handleToggleNotifications = () => {
+    soundEngine.play('click');
+    setShowNotifications((prev) => !prev);
+  };
+
+  const handleMarkAllRead = () => {
+    soundEngine.play('click');
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
+
+  const handleClearNotifications = () => {
+    soundEngine.play('click');
+    setNotifications([]);
   };
 
   const level = character?.level || 1;
@@ -97,13 +142,108 @@ export const GameHUD: React.FC<{ user: User; character?: Character }> = ({ user,
             {soundOn ? <Volume2 className="w-4 h-4 text-emerald-400" /> : <VolumeX className="w-4 h-4 text-zinc-500" />}
           </button>
 
-          {/* Notifications */}
-          <button className="p-2 rounded-xl bg-white/5 border border-white/10 text-zinc-400 hover:text-amber-400 transition-colors relative">
-            <Bell className="w-4 h-4" />
-            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-500" />
-          </button>
+          {/* Notifications Button */}
+          <div className="relative">
+            <button
+              onClick={handleToggleNotifications}
+              className={`p-2 rounded-xl border transition-all relative ${
+                showNotifications
+                  ? 'bg-amber-500/20 border-amber-500 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.3)]'
+                  : 'bg-white/5 border-white/10 text-zinc-400 hover:text-amber-400 hover:border-amber-500/40'
+              }`}
+              title="System Notifications"
+            >
+              <Bell className="w-4 h-4" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-amber-500 text-zinc-950 font-mono font-black text-[10px] flex items-center justify-center border border-zinc-950 shadow">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
+            {/* Notification Popover Dropdown */}
+            {showNotifications && (
+              <div className="absolute right-0 mt-3 w-80 sm:w-96 glass-card-gold rounded-2xl border border-amber-500/40 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.9)] z-50 animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between border-b border-amber-500/20 pb-3 mb-3">
+                  <div className="flex items-center gap-2">
+                    <Bell className="w-4 h-4 text-amber-400" />
+                    <h4 className="font-cinzel font-bold text-sm text-white uppercase tracking-wider">
+                      SYSTEM NOTIFICATIONS
+                    </h4>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={handleMarkAllRead}
+                        className="text-[10px] font-mono text-amber-400 hover:underline flex items-center gap-1"
+                      >
+                        <CheckCheck className="w-3 h-3" /> READ ALL
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setShowNotifications(false)}
+                      className="p-1 rounded-lg hover:bg-white/10 text-zinc-400 hover:text-white"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {notifications.length === 0 ? (
+                  <div className="py-8 text-center text-xs font-mono text-zinc-500">
+                    NO NEW NOTIFICATIONS
+                  </div>
+                ) : (
+                  <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+                    {notifications.map((notif) => (
+                      <div
+                        key={notif.id}
+                        onClick={() => {
+                          setNotifications((prev) =>
+                            prev.map((n) => (n.id === notif.id ? { ...n, read: true } : n))
+                          );
+                        }}
+                        className={`p-3 rounded-xl border transition-all cursor-pointer ${
+                          notif.read
+                            ? 'bg-zinc-900/40 border-white/5 text-zinc-400'
+                            : 'bg-amber-500/10 border-amber-500/30 text-zinc-100 shadow-[0_0_10px_rgba(245,158,11,0.08)]'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <h5 className="font-bold text-xs font-cinzel text-amber-300 flex items-center gap-1.5">
+                            {notif.type === 'streak' && <Flame className="w-3.5 h-3.5 text-orange-400" />}
+                            {notif.type === 'level_up' && <Sparkles className="w-3.5 h-3.5 text-amber-400" />}
+                            {notif.type === 'system' && <Shield className="w-3.5 h-3.5 text-cyan-400" />}
+                            <span>{notif.title}</span>
+                          </h5>
+                          <span className="text-[9px] font-mono text-zinc-500 whitespace-nowrap">
+                            {notif.timestamp}
+                          </span>
+                        </div>
+                        <p className="text-[11px] font-mono text-zinc-300 mt-1 leading-snug">
+                          {notif.message}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {notifications.length > 0 && (
+                  <div className="mt-3 pt-2 border-t border-amber-500/20 text-center">
+                    <button
+                      onClick={handleClearNotifications}
+                      className="text-[10px] font-mono text-zinc-500 hover:text-rose-400 transition-colors"
+                    >
+                      CLEAR ALL NOTIFICATIONS
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>
   );
 };
+

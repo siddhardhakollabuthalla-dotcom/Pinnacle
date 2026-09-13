@@ -57,7 +57,11 @@ export const App: React.FC = () => {
     enabled: !!user,
   });
 
-  // Automatically sync equipped theme from inventory
+  const handleLogout = async () => {
+    await api.logout();
+    queryClient.invalidateQueries({ queryKey: ['me'] });
+    queryClient.clear();
+  };
   React.useEffect(() => {
     const equippedTheme = inventory.find((inv) => inv.equipped && inv.item.type === 'theme');
     if (equippedTheme?.item.metadata_json?.theme_key) {
@@ -280,7 +284,12 @@ export const App: React.FC = () => {
           )}
 
           {activeTab === 'character' && character && (
-            <CharacterDashboard character={character} quests={quests} />
+            <CharacterDashboard
+              character={character}
+              user={user}
+              quests={quests}
+              onLogout={handleLogout}
+            />
           )}
 
           {activeTab === 'battlepass' && character && (

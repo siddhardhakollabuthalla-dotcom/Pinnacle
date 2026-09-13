@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Sparkles, Dumbbell, Brain, ShieldCheck, Palette, HeartPulse, Crown, Zap, ChevronRight, Swords, X } from 'lucide-react';
-import type { Character, Quest } from '../types';
+import { Sparkles, Dumbbell, Brain, ShieldCheck, Palette, HeartPulse, Crown, Zap, ChevronRight, Swords, X, LogOut } from 'lucide-react';
+import type { Character, Quest, User } from '../types';
 import { XPBar, StreakFlame } from '../components/GamificationEffects';
 import { getRankInfo } from '../utils/rankingSystem';
 import { RankBadgeIcon } from '../components/game/RankBadgeIcon';
@@ -16,7 +16,12 @@ const ATTRIBUTE_ICONS: Record<string, React.ReactNode> = {
   Crown: <Crown className="w-5 h-5 text-amber-300" />,
 };
 
-export const CharacterDashboard: React.FC<{ character: Character; quests?: Quest[] }> = ({ character, quests = [] }) => {
+export const CharacterDashboard: React.FC<{
+  character: Character;
+  user?: User;
+  quests?: Quest[];
+  onLogout?: () => void;
+}> = ({ character, user, quests = [], onLogout }) => {
   const rankInfo = getRankInfo(character?.total_xp || 0, character?.current_streak || 0, character?.longest_streak || 0);
   const [selectedAttributeId, setSelectedAttributeId] = useState<string | null>(null);
 
@@ -66,7 +71,9 @@ export const CharacterDashboard: React.FC<{ character: Character; quests?: Quest
               <h2 className="text-3xl font-black font-cinzel text-white tracking-wide mt-1">
                 PLAYER PROFILE
               </h2>
-              <p className="text-xs text-zinc-400 font-mono mt-1 flex items-center gap-2">
+              <p className="text-xs text-zinc-400 font-mono mt-1 flex flex-wrap items-center gap-2">
+                {user && <span className="text-amber-400 font-bold font-mono">@{user.username} ({user.email})</span>}
+                {user && <span>•</span>}
                 <span>Longest Streak: <strong className="text-amber-400">{character.longest_streak} DAYS</strong></span>
                 <span>•</span>
                 <span>Gold Wallet: <strong className="text-amber-300 font-bold">{character.gold} 🪙</strong></span>
@@ -74,22 +81,36 @@ export const CharacterDashboard: React.FC<{ character: Character; quests?: Quest
             </div>
           </div>
 
-          {/* Quick Stats Grid */}
-          <div className="flex items-center gap-4 bg-zinc-950/60 border border-white/10 rounded-2xl p-4 backdrop-blur-md">
-            <div className="text-center px-4 border-r border-white/10">
-              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block">LEVEL</span>
-              <span className="text-2xl font-black font-mono text-amber-400">{character.level}</span>
+          {/* Quick Stats Grid & Account Action */}
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="flex items-center gap-4 bg-zinc-950/60 border border-white/10 rounded-2xl p-4 backdrop-blur-md">
+              <div className="text-center px-4 border-r border-white/10">
+                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block">LEVEL</span>
+                <span className="text-2xl font-black font-mono text-amber-400">{character.level}</span>
+              </div>
+              <div className="text-center px-4 border-r border-white/10">
+                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block">LIFETIME XP</span>
+                <span className="text-2xl font-black font-mono text-white">{character.total_xp}</span>
+              </div>
+              <div className="text-center px-4">
+                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block">STREAK</span>
+                <span className="text-2xl font-black font-mono text-orange-400 flex items-center justify-center gap-1">
+                  {character.current_streak}🔥
+                </span>
+              </div>
             </div>
-            <div className="text-center px-4 border-r border-white/10">
-              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block">LIFETIME XP</span>
-              <span className="text-2xl font-black font-mono text-white">{character.total_xp}</span>
-            </div>
-            <div className="text-center px-4">
-              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block">STREAK</span>
-              <span className="text-2xl font-black font-mono text-orange-400 flex items-center justify-center gap-1">
-                {character.current_streak}🔥
-              </span>
-            </div>
+
+            {/* Logout Button */}
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                className="flex items-center justify-center gap-2 px-5 py-4 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 hover:border-rose-500/60 text-rose-400 font-mono text-xs font-bold transition-all shadow-lg hover:shadow-rose-500/20 group w-full sm:w-auto"
+                title="Log Out of Account"
+              >
+                <LogOut className="w-4 h-4 text-rose-400 group-hover:-translate-x-0.5 transition-transform" />
+                <span>LOG OUT</span>
+              </button>
+            )}
           </div>
         </div>
 
