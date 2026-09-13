@@ -133,6 +133,7 @@ export const QuestBoard: React.FC<{
 
   const [timeLimitMinutes, setTimeLimitMinutes] = useState<number | ''>('');
   const [activeTimers, setActiveTimers] = useState<Record<string, { startTime: number; durationSeconds: number; elapsedSeconds: number }>>({});
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [filterTab, setFilterTab] = useState<'active' | 'completed'>('active');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -257,9 +258,16 @@ export const QuestBoard: React.FC<{
       setProofError('Proof description must be at least 5 characters to verify.');
       return;
     }
+    soundEngine.play('click');
+    setShowConfirmDialog(true);
+  };
 
+  const handleConfirmCompletion = async () => {
+    if (!questForProof) return;
+    const trimmed = proofText.trim();
     setIsSubmittingProof(true);
     setProofError('');
+    setShowConfirmDialog(false);
     try {
       const cleanLink = proofLink.trim();
       await onCompleteQuest(
@@ -852,6 +860,45 @@ export const QuestBoard: React.FC<{
                 </form>
               );
             })()}
+          </motion.div>
+        </div>
+      )}
+
+      {/* Confirmation Dialog Box */}
+      {showConfirmDialog && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-lg">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="w-full max-w-md bg-zinc-950 border-2 border-amber-500/80 rounded-3xl p-6 shadow-[0_0_60px_rgba(245,158,11,0.4)] text-center space-y-5"
+          >
+            <div className="w-16 h-16 rounded-full bg-amber-500/20 border border-amber-500/50 text-amber-400 mx-auto flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.3)]">
+              <ShieldAlert className="w-8 h-8 text-amber-400" />
+            </div>
+
+            <div>
+              <h3 className="text-xl font-black font-cinzel text-amber-300">
+                DID YOU REALLY COMPLETE THE TASK?
+              </h3>
+              <p className="text-xs font-mono text-zinc-300 mt-2 leading-relaxed">
+                Pinnacle Anti-Cheat Protocol requires absolute honesty. Confirm that your proof details are truthful and complete before issuing rewards.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-center gap-4 pt-2">
+              <button
+                onClick={() => setShowConfirmDialog(false)}
+                className="flex-1 py-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 text-zinc-300 font-mono text-xs font-bold transition-all"
+              >
+                NOT TRUE (CANCEL)
+              </button>
+              <button
+                onClick={handleConfirmCompletion}
+                className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-zinc-950 font-black font-mono text-xs shadow-[0_0_25px_rgba(245,158,11,0.4)] transition-all"
+              >
+                TRUE (OK)
+              </button>
+            </div>
           </motion.div>
         </div>
       )}

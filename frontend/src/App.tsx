@@ -248,9 +248,11 @@ export const App: React.FC = () => {
       return (
         <AuthModal
           initialMode={authMode}
-          onAuthSuccess={() => {
+          onAuthSuccess={(userData) => {
             setAuthMode(null);
-            queryClient.invalidateQueries({ queryKey: ['me'] });
+            queryClient.setQueryData(['me'], userData);
+            queryClient.invalidateQueries({ queryKey: ['character'] });
+            queryClient.invalidateQueries({ queryKey: ['quests'] });
           }}
           onBack={() => setAuthMode(null)}
         />
