@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Shield, Coins, Gem, Flame, Trophy, Bell, Volume2, VolumeX } from 'lucide-react';
+import { Coins, Gem, Flame, Trophy, Bell, Volume2, VolumeX } from 'lucide-react';
 import type { User, Character } from '../../types';
 import { soundEngine } from '../../utils/soundEngine';
 import { getRankInfo } from '../../utils/rankingSystem';
+import { RankBadgeIcon } from './RankBadgeIcon';
 
 export const GameHUD: React.FC<{ user: User; character?: Character }> = ({ user, character }) => {
   const [soundOn, setSoundOn] = useState(soundEngine.isEnabled());
@@ -28,7 +29,7 @@ export const GameHUD: React.FC<{ user: User; character?: Character }> = ({ user,
           <div className="relative group">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 via-amber-600 to-yellow-700 p-0.5 shadow-[0_0_15px_rgba(245,158,11,0.4)]">
               <div className="w-full h-full bg-[#090b14] rounded-[10px] flex items-center justify-center text-amber-400 font-bold">
-                <Shield className="w-6 h-6 text-amber-400 group-hover:scale-110 transition-transform" />
+                <RankBadgeIcon material={rankInfo.currentRank.material} subRank={rankInfo.currentRank.subRank} size="sm" />
               </div>
             </div>
             <span className="absolute -bottom-1 -right-1 bg-amber-500 text-black font-black font-mono text-[10px] px-1.5 py-0.2 rounded border border-black shadow">
@@ -40,10 +41,10 @@ export const GameHUD: React.FC<{ user: User; character?: Character }> = ({ user,
             <div className="flex items-center gap-2">
               <span className="font-game-title font-bold text-sm tracking-wider text-white uppercase">{user.username}</span>
               <span
-                className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded border flex items-center gap-1 ${rankInfo.currentRank.badgeClass}`}
+                className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded border flex items-center gap-1.5 ${rankInfo.currentRank.badgeClass}`}
                 title={`Power Rating Score: ${rankInfo.ratingScore} (${rankInfo.currentRank.powerLevel})`}
               >
-                <span>{rankInfo.currentRank.icon}</span>
+                <RankBadgeIcon material={rankInfo.currentRank.material} subRank={rankInfo.currentRank.subRank} size="xs" showGlow={false} />
                 <span>{rankInfo.currentRank.fullName}</span>
               </span>
             </div>

@@ -19,7 +19,8 @@ export const GameLobby: React.FC<{
   return (
     <div className="relative min-h-[calc(100vh-140px)] flex flex-col justify-between py-6">
       {/* Top Banner Tagline */}
-      <div className="text-center space-y-1">
+      <div className="text-center space-y-1 flex flex-col items-center">
+        <img src="/logo.png" alt="Pinnacle Logo" className="w-20 h-20 md:w-24 md:h-24 object-contain drop-shadow-[0_0_25px_rgba(245,158,11,0.5)] mb-1" />
         <h2 className="text-4xl md:text-5xl font-black font-game-title tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-500 drop-shadow-[0_0_20px_rgba(245,158,11,0.4)]">
           PINNACLE
         </h2>

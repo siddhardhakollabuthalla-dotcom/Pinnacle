@@ -24,7 +24,7 @@ export const App: React.FC = () => {
   const { addFloatingXp, showLevelUp, setTheme } = useUIStore();
 
   // 1. Auth query
-  const { data: user, isLoading: userLoading, error: userError } = useQuery<User>({
+  const { data: user, isLoading: userLoading, error: userError } = useQuery<User | null>({
     queryKey: ['me'],
     queryFn: api.getMe,
     retry: false,
