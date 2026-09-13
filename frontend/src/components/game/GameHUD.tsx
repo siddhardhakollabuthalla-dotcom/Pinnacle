@@ -5,7 +5,11 @@ import { soundEngine } from '../../utils/soundEngine';
 import { getRankInfo } from '../../utils/rankingSystem';
 import { RankBadgeIcon } from './RankBadgeIcon';
 
-export const GameHUD: React.FC<{ user: User; character?: Character }> = ({ user, character }) => {
+export const GameHUD: React.FC<{
+  user: User;
+  character?: Character;
+  onOpenProfile?: () => void;
+}> = ({ user, character, onOpenProfile }) => {
   const [soundOn, setSoundOn] = useState(soundEngine.isEnabled());
   const [showNotifications, setShowNotifications] = useState(false);
 
@@ -69,10 +73,19 @@ export const GameHUD: React.FC<{ user: User; character?: Character }> = ({ user,
   return (
     <header className="sticky top-0 z-40 bg-[#07080d]/90 border-b border-cyan-500/20 backdrop-blur-2xl px-4 py-2.5 shadow-[0_4px_25px_rgba(0,0,0,0.8)]">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-        {/* Top-Left: PLAYER AVATAR & LEVEL HUD */}
-        <div className="flex items-center gap-3">
-          <div className="relative group">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 via-amber-600 to-yellow-700 p-0.5 shadow-[0_0_15px_rgba(245,158,11,0.4)]">
+        {/* Top-Left: PLAYER AVATAR & LEVEL HUD (Click to view Profile) */}
+        <div
+          onClick={() => {
+            if (onOpenProfile) {
+              soundEngine.play('click');
+              onOpenProfile();
+            }
+          }}
+          className="flex items-center gap-3 cursor-pointer group hover:opacity-90 transition-all p-1 rounded-xl hover:bg-white/5"
+          title="Click to view Player Profile"
+        >
+          <div className="relative">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 via-amber-600 to-yellow-700 p-0.5 shadow-[0_0_15px_rgba(245,158,11,0.4)] group-hover:scale-105 transition-transform">
               <div className="w-full h-full bg-[#090b14] rounded-[10px] flex items-center justify-center text-amber-400 font-bold">
                 <RankBadgeIcon material={rankInfo.currentRank.material} subRank={rankInfo.currentRank.subRank} size="sm" />
               </div>
@@ -84,7 +97,7 @@ export const GameHUD: React.FC<{ user: User; character?: Character }> = ({ user,
 
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-game-title font-bold text-sm tracking-wider text-white uppercase">{user.username}</span>
+              <span className="font-game-title font-bold text-sm tracking-wider text-white uppercase group-hover:text-amber-400 transition-colors">{user.username}</span>
               <span
                 className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded border flex items-center gap-1.5 ${rankInfo.currentRank.badgeClass}`}
                 title={`Power Rating Score: ${rankInfo.ratingScore} (${rankInfo.currentRank.powerLevel})`}
