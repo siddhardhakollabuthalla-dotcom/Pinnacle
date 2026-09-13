@@ -58,9 +58,11 @@ export const App: React.FC = () => {
   });
 
   const handleLogout = async () => {
-    await api.logout();
-    queryClient.invalidateQueries({ queryKey: ['me'] });
+    queryClient.setQueryData(['me'], null);
+    queryClient.setQueryData(['character'], null);
+    queryClient.cancelQueries();
     queryClient.clear();
+    await api.logout();
   };
   React.useEffect(() => {
     const equippedTheme = inventory.find((inv) => inv.equipped && inv.item.type === 'theme');
