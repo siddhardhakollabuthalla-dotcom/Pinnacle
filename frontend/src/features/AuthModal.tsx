@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, LogIn, UserPlus } from 'lucide-react';
+import { LogIn, UserPlus } from 'lucide-react';
 import { api } from '../api/client';
 import type { User } from '../types';
 
@@ -35,8 +35,8 @@ export const AuthModal: React.FC<{ onAuthSuccess: (user: User) => void }> = ({ o
     <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-900 via-gray-950 to-black">
       <div className="w-full max-w-md bg-gray-900/80 border border-white/10 rounded-2xl p-8 backdrop-blur-xl shadow-2xl">
         <div className="text-center mb-6">
-          <div className="inline-flex p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 mb-3 shadow-[0_0_20px_rgba(245,158,11,0.2)]">
-            <Shield className="w-8 h-8" />
+          <div className="inline-flex p-2 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 mb-3 shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+            <img src="/logo.png" alt="Pinnacle Logo" className="w-12 h-12 object-contain" />
           </div>
           <h1 className="text-2xl font-extrabold tracking-wider bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-500 bg-clip-text text-transparent">
             PINNACLE
