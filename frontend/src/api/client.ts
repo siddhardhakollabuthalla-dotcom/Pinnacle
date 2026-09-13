@@ -59,15 +59,25 @@ export const api = {
 
   logout: async (): Promise<void> => {
     localStorage.removeItem('token');
-    await fetch(`${API_BASE}/auth/logout`, {
-      method: 'POST',
-      credentials: 'include',
-    });
+    try {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch {
+      // Ignore background logout network errors
+    }
   },
 
   getMe: async (): Promise<User | null> => {
+    const token = localStorage.getItem('token');
+    // If no token exists in localStorage, return null immediately without triggering a failed 401 request
+    if (!token) {
+      return null;
+    }
     const res = await fetch(`${API_BASE}/auth/me`, { headers: getHeaders(false), credentials: 'include' });
-    if (res.status === 401) {
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('token');
       return null;
     }
     return handleResponse<User>(res);
