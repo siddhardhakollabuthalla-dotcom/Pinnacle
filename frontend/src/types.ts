@@ -100,3 +100,13 @@ export interface LeaderboardUser {
   streak: number;
   is_current?: boolean;
 }
+
+export interface GameNotification {
+  id: string;
+  title: string;
+  message: string;
+  timestamp: string;
+  type: 'achievement' | 'level_up' | 'quest' | 'streak' | 'system';
+  read: boolean;
+}
+
