@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from './api/client';
 import type { User, Character, Quest, Item, InventoryItem } from './types';
 import { AuthModal } from './features/AuthModal';
+import { LandingOverview } from './features/LandingOverview';
 import { GameHUD } from './components/game/GameHUD';
 import { BottomNavigation, type NavTab } from './components/game/BottomNavigation';
 import { GameBackground } from './components/game/GameBackground';
@@ -21,6 +22,7 @@ const Leaderboard = lazy(() => import('./features/Leaderboard/Leaderboard').then
 export const App: React.FC = () => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<NavTab>('lobby');
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const { addFloatingXp, showLevelUp, setTheme } = useUIStore();
 
   // 1. Auth query
@@ -242,7 +244,19 @@ export const App: React.FC = () => {
   }
 
   if (userError || !user) {
-    return <AuthModal onAuthSuccess={() => queryClient.invalidateQueries({ queryKey: ['me'] })} />;
+    if (showAuthModal) {
+      return (
+        <AuthModal
+          onAuthSuccess={() => {
+            setShowAuthModal(false);
+            queryClient.invalidateQueries({ queryKey: ['me'] });
+          }}
+          onBack={() => setShowAuthModal(false)}
+        />
+      );
+    }
+
+    return <LandingOverview onGetStarted={() => setShowAuthModal(true)} />;
   }
 
   return (

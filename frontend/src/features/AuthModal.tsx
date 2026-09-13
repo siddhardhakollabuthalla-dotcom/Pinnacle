@@ -3,7 +3,10 @@ import { LogIn, UserPlus } from 'lucide-react';
 import { api } from '../api/client';
 import type { User } from '../types';
 
-export const AuthModal: React.FC<{ onAuthSuccess: (user: User) => void }> = ({ onAuthSuccess }) => {
+export const AuthModal: React.FC<{
+  onAuthSuccess: (user: User) => void;
+  onBack?: () => void;
+}> = ({ onAuthSuccess, onBack }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -32,7 +35,16 @@ export const AuthModal: React.FC<{ onAuthSuccess: (user: User) => void }> = ({ o
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-900 via-gray-950 to-black">
+    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-900 via-gray-950 to-black relative">
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="absolute top-6 left-6 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-zinc-300 hover:text-white font-mono text-xs font-bold transition-all flex items-center gap-2"
+        >
+          ← BACK TO OVERVIEW
+        </button>
+      )}
+
       <div className="w-full max-w-md bg-gray-900/80 border border-white/10 rounded-2xl p-8 backdrop-blur-xl shadow-2xl">
         <div className="text-center mb-6">
           <div className="inline-flex p-2 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 mb-3 shadow-[0_0_20px_rgba(245,158,11,0.2)]">
