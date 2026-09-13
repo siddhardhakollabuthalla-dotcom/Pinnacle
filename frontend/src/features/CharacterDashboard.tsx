@@ -1,7 +1,9 @@
 import React from 'react';
-import { Shield, Sparkles, Dumbbell, Brain, ShieldCheck, Palette, HeartPulse, Crown, Zap } from 'lucide-react';
+import { Sparkles, Dumbbell, Brain, ShieldCheck, Palette, HeartPulse, Crown, Zap } from 'lucide-react';
 import type { Character } from '../types';
 import { XPBar, StreakFlame } from '../components/GamificationEffects';
+import { getRankInfo } from '../utils/rankingSystem';
+import { RankBadgeIcon } from '../components/game/RankBadgeIcon';
 
 const ATTRIBUTE_ICONS: Record<string, React.ReactNode> = {
   Dumbbell: <Dumbbell className="w-5 h-5 text-amber-400" />,
@@ -14,6 +16,8 @@ const ATTRIBUTE_ICONS: Record<string, React.ReactNode> = {
 };
 
 export const CharacterDashboard: React.FC<{ character: Character }> = ({ character }) => {
+  const rankInfo = getRankInfo(character?.total_xp || 0, character?.current_streak || 0, character?.longest_streak || 0);
+
   return (
     <div className="space-y-8">
       {/* Hero Character Card - Epic Chronos RPG Profile Banner */}
@@ -28,7 +32,7 @@ export const CharacterDashboard: React.FC<{ character: Character }> = ({ charact
             <div className="relative">
               <div className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-300 p-1 shadow-[0_0_30px_rgba(245,158,11,0.4)]">
                 <div className="w-full h-full bg-zinc-950 rounded-[22px] flex items-center justify-center text-amber-400 relative overflow-hidden">
-                  <Shield className="w-12 h-12 text-amber-400 animate-pulse" />
+                  <RankBadgeIcon material={rankInfo.currentRank.material} subRank={rankInfo.currentRank.subRank} size="xl" />
                   <div className="absolute inset-0 bg-gradient-to-b from-amber-500/10 to-transparent pointer-events-none" />
                 </div>
               </div>
@@ -39,8 +43,9 @@ export const CharacterDashboard: React.FC<{ character: Character }> = ({ charact
 
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono uppercase tracking-widest text-amber-400 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/20">
-                  CHRONOS PALADIN
+                <span className={`text-xs font-mono font-bold uppercase px-3 py-1 rounded-full border flex items-center gap-1.5 ${rankInfo.currentRank.badgeClass}`}>
+                  <RankBadgeIcon material={rankInfo.currentRank.material} subRank={rankInfo.currentRank.subRank} size="xs" showGlow={false} />
+                  <span>{rankInfo.currentRank.fullName}</span>
                 </span>
                 <StreakFlame streak={character.current_streak} />
               </div>

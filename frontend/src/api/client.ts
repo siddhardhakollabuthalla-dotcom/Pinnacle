@@ -65,8 +65,11 @@ export const api = {
     });
   },
 
-  getMe: async (): Promise<User> => {
+  getMe: async (): Promise<User | null> => {
     const res = await fetch(`${API_BASE}/auth/me`, { headers: getHeaders(false), credentials: 'include' });
+    if (res.status === 401) {
+      return null;
+    }
     return handleResponse<User>(res);
   },
 
