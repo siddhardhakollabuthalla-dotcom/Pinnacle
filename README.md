@@ -70,6 +70,9 @@ source venv/bin/activate
 # Install backend dependencies
 pip install -r requirements.txt
 
+# Copy example environment configuration
+cp .env.example .env
+
 # Seed database with RPG attributes & shop items
 python seed.py
 
