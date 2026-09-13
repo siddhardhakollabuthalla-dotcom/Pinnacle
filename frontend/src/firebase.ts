@@ -24,7 +24,11 @@ export let analytics: any = null;
 if (typeof window !== 'undefined') {
   isSupported().then((supported: boolean) => {
     if (supported) {
-      analytics = getAnalytics(app);
+      try {
+        analytics = getAnalytics(app);
+      } catch (e) {
+        console.warn('Analytics not supported or disabled in this environment:', e);
+      }
     }
-  });
+  }).catch(() => {});
 }
