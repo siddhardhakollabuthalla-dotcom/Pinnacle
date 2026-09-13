@@ -181,9 +181,10 @@ export const QuestBoard: React.FC<{
   }, []);
 
   const handleStartQuestTimer = (questId: string, durationMins?: number) => {
+    if (!durationMins || durationMins <= 0) return;
     soundEngine.play('click');
     const now = Math.floor(Date.now() / 1000);
-    const durationSec = (durationMins || 25) * 60;
+    const durationSec = durationMins * 60;
     setActiveTimers((prev) => ({
       ...prev,
       [questId]: {
@@ -530,15 +531,20 @@ export const QuestBoard: React.FC<{
                         );
                       }
 
-                      return (
-                        <button
-                          onClick={() => handleStartQuestTimer(quest.id, timeLimitMinutes || 25)}
-                          className="px-3 py-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 font-mono text-xs font-bold transition-all flex items-center gap-1.5 group"
-                        >
-                          <Play className="w-3.5 h-3.5 fill-cyan-400 group-hover:scale-110 transition-transform" />
-                          <span>GET STARTED TIMER</span>
-                        </button>
-                      );
+                      // Optional timer start: Only if user explicitly entered a time limit for this quest or session
+                      if (timeLimitMinutes && timeLimitMinutes > 0) {
+                        return (
+                          <button
+                            onClick={() => handleStartQuestTimer(quest.id, Number(timeLimitMinutes))}
+                            className="px-3 py-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 font-mono text-xs font-bold transition-all flex items-center gap-1.5 group"
+                          >
+                            <Play className="w-3.5 h-3.5 fill-cyan-400 group-hover:scale-110 transition-transform" />
+                            <span>START {timeLimitMinutes}M TIMER</span>
+                          </button>
+                        );
+                      }
+
+                      return null;
                     })()}
 
                     {!isCompleted && (
