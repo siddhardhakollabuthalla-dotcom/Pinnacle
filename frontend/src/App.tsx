@@ -22,7 +22,7 @@ const Leaderboard = lazy(() => import('./features/Leaderboard/Leaderboard').then
 export const App: React.FC = () => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<NavTab>('lobby');
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'signup' | null>(null);
   const { addFloatingXp, showLevelUp, setTheme } = useUIStore();
 
   // 1. Auth query
@@ -244,19 +244,25 @@ export const App: React.FC = () => {
   }
 
   if (userError || !user) {
-    if (showAuthModal) {
+    if (authMode) {
       return (
         <AuthModal
+          initialMode={authMode}
           onAuthSuccess={() => {
-            setShowAuthModal(false);
+            setAuthMode(null);
             queryClient.invalidateQueries({ queryKey: ['me'] });
           }}
-          onBack={() => setShowAuthModal(false)}
+          onBack={() => setAuthMode(null)}
         />
       );
     }
 
-    return <LandingOverview onGetStarted={() => setShowAuthModal(true)} />;
+    return (
+      <LandingOverview
+        onGetStarted={() => setAuthMode('login')}
+        onCreateAccount={() => setAuthMode('signup')}
+      />
+    );
   }
 
   return (

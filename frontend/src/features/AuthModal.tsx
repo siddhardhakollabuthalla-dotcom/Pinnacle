@@ -6,8 +6,9 @@ import type { User } from '../types';
 export const AuthModal: React.FC<{
   onAuthSuccess: (user: User) => void;
   onBack?: () => void;
-}> = ({ onAuthSuccess, onBack }) => {
-  const [isLogin, setIsLogin] = useState(true);
+  initialMode?: 'login' | 'signup';
+}> = ({ onAuthSuccess, onBack, initialMode = 'login' }) => {
+  const [isLogin, setIsLogin] = useState(initialMode === 'login');
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
