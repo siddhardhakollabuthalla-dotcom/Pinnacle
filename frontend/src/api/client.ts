@@ -1,7 +1,7 @@
 import type { User, Character, Quest, QuestCompletionResult, Item, InventoryItem, QuestHistory, LeaderboardUser } from '../types';
 
-// Use relative '/api' endpoint so Vite proxies directly to FastAPI backend, resolving cross-origin HTTPS -> HTTP browser blocks
-const API_BASE = '/api';
+// Use VITE_API_URL or relative '/api' endpoint so Vite proxies directly to FastAPI backend
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 function getHeaders(contentType = true): Record<string, string> {
   const headers: Record<string, string> = {};

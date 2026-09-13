@@ -18,8 +18,9 @@ export default defineConfig({
     ],
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:8000',
+        target: 'https://backend-liart-ten-64.vercel.app',
         changeOrigin: true,
+        secure: false,
         rewrite: (path) => path.replace(/^\/api/, '')
       }
     }
