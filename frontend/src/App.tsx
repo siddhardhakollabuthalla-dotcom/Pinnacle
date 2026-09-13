@@ -255,7 +255,7 @@ export const App: React.FC = () => {
       <LevelUpModal />
 
       {/* Top Game Player HUD */}
-      <GameHUD user={user} character={character} />
+      <GameHUD user={user} character={character} onOpenProfile={() => setActiveTab('character')} />
 
       {/* Main Game Screen Router */}
       <main className="max-w-6xl mx-auto px-4 py-6 relative z-10">
