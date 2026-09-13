@@ -66,22 +66,27 @@ async def get_character(
             attrs_out.append(
                 CharacterAttributeOut(
                     attribute=AttributeOut.model_validate(attr_obj),
-                    level=ca.level,
-                    xp=ca.xp,
-                    next_level_xp=attribute_xp_to_next_level(ca.level)
+                    level=ca.level or 1,
+                    xp=ca.xp or 0,
+                    next_level_xp=attribute_xp_to_next_level(ca.level or 1)
                 )
             )
 
+    char_level = character.level or 1
+    char_gems = character.gems if getattr(character, "gems", None) is not None else 10
+    char_trophies = character.trophies if getattr(character, "trophies", None) is not None else 0
+
     return CharacterOut(
         id=character.id,
-        level=character.level,
-        current_xp=character.current_xp,
-        next_level_xp=xp_to_next_level(character.level),
-        total_xp=character.total_xp,
-        gold=character.gold,
-        gems=getattr(character, "gems", 10),
-        current_streak=character.current_streak,
-        longest_streak=character.longest_streak,
+        level=char_level,
+        current_xp=character.current_xp or 0,
+        next_level_xp=xp_to_next_level(char_level),
+        total_xp=character.total_xp or 0,
+        gold=character.gold or 0,
+        gems=char_gems,
+        trophies=char_trophies,
+        current_streak=character.current_streak or 0,
+        longest_streak=character.longest_streak or 0,
         last_completion_date=character.last_completion_date,
         attributes=attrs_out
     )

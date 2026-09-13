@@ -54,6 +54,7 @@ def award_xp_and_gold(character: Character, xp_amount: int, gold_amount: int):
     character.current_xp += xp_amount
     character.total_xp += xp_amount
     character.gold += gold_amount
+    character.trophies = (character.trophies or 0) + 1
 
     leveled_up = False
     new_level = character.level

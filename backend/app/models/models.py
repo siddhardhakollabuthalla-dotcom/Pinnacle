@@ -38,6 +38,7 @@ class Character(Base):
     total_xp = Column(Integer, default=0, nullable=False)
     gold = Column(Integer, default=0, nullable=False)
     gems = Column(Integer, default=10, nullable=False)
+    trophies = Column(Integer, default=0, nullable=False)
     current_streak = Column(Integer, default=0, nullable=False)
     longest_streak = Column(Integer, default=0, nullable=False)
     last_completion_date = Column(String, nullable=True)  # YYYY-MM-DD

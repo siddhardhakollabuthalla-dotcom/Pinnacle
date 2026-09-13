@@ -69,9 +69,43 @@ async def signup(user_in: UserCreate, response: Response, db: AsyncSession = Dep
     # Initialize attributes for character
     attrs_result = await db.execute(select(Attribute))
     attrs = attrs_result.scalars().all()
+    attr_map = {a.key: a.id for a in attrs}
     for attr in attrs:
         char_attr = CharacterAttribute(character_id=character.id, attribute_id=attr.id)
         db.add(char_attr)
+
+    # Initialize default daily recurring quests
+    from app.models.models import Quest
+    default_daily = [
+        {
+            "title": "Drink 4 Litres of Water",
+            "description": "Hydrate consistently throughout the day. Achieve maximum cellular vitality and cognitive performance.",
+            "difficulty": "medium",
+            "attribute_id": attr_map.get("vitality"),
+            "is_recurring": True,
+            "recurrence_rule": "days:Mon,Tue,Wed,Thu,Fri,Sat,Sun"
+        },
+        {
+            "title": "Walk 10,000 Steps",
+            "description": "Maintain active daily physical movement and cardiovascular endurance.",
+            "difficulty": "medium",
+            "attribute_id": attr_map.get("strength"),
+            "is_recurring": True,
+            "recurrence_rule": "days:Mon,Tue,Wed,Thu,Fri,Sat,Sun"
+        }
+    ]
+    for dq in default_daily:
+        new_q = Quest(
+            user_id=new_user.id,
+            title=dq["title"],
+            description=dq["description"],
+            difficulty=dq["difficulty"],
+            attribute_id=dq["attribute_id"],
+            is_recurring=True,
+            recurrence_rule=dq["recurrence_rule"],
+            status="active"
+        )
+        db.add(new_q)
 
     await db.commit()
 

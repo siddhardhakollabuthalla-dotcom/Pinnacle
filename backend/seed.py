@@ -53,6 +53,25 @@ DEFAULT_SHOP_ITEMS = [
     }
 ]
 
+DEFAULT_DAILY_QUESTS = [
+    {
+        "title": "Drink 4 Litres of Water",
+        "description": "Hydrate consistently throughout the day. Achieve maximum cellular vitality and cognitive performance.",
+        "difficulty": "medium",
+        "attribute_key": "vitality",
+        "is_recurring": True,
+        "recurrence_rule": "days:Mon,Tue,Wed,Thu,Fri,Sat,Sun"
+    },
+    {
+        "title": "Walk 10,000 Steps",
+        "description": "Maintain active daily physical movement and cardiovascular endurance.",
+        "difficulty": "medium",
+        "attribute_key": "strength",
+        "is_recurring": True,
+        "recurrence_rule": "days:Mon,Tue,Wed,Thu,Fri,Sat,Sun"
+    }
+]
+
 async def seed_data(session: AsyncSession = None):
     if session is not None:
         await _perform_seed(session)
@@ -61,6 +80,8 @@ async def seed_data(session: AsyncSession = None):
             await _perform_seed(db_session)
 
 async def _perform_seed(session: AsyncSession):
+    from app.models.models import Quest
+
     # Seed Attributes
     for attr_data in DEFAULT_ATTRIBUTES:
         res = await session.execute(select(Attribute).filter(Attribute.key == attr_data["key"]))
@@ -74,7 +95,34 @@ async def _perform_seed(session: AsyncSession):
             session.add(Item(**item_data))
 
     await session.commit()
-    print("Database successfully seeded with RPG Attributes and Shop Items!")
+
+    # Seed Daily Quests for all existing users if missing
+    users_res = await session.execute(select(User))
+    users = users_res.scalars().all()
+    for user in users:
+        for dq in DEFAULT_DAILY_QUESTS:
+            # Check if quest exists for user
+            q_res = await session.execute(
+                select(Quest).filter(Quest.user_id == user.id, Quest.title == dq["title"])
+            )
+            if not q_res.scalars().first():
+                # Find attribute ID
+                attr_res = await session.execute(select(Attribute).filter(Attribute.key == dq["attribute_key"]))
+                attr_obj = attr_res.scalars().first()
+                new_q = Quest(
+                    user_id=user.id,
+                    title=dq["title"],
+                    description=dq["description"],
+                    difficulty=dq["difficulty"],
+                    attribute_id=attr_obj.id if attr_obj else None,
+                    is_recurring=True,
+                    recurrence_rule=dq["recurrence_rule"],
+                    status="active"
+                )
+                session.add(new_q)
+
+    await session.commit()
+    print("Database successfully seeded with RPG Attributes, Shop Items, and Daily Quests!")
 
 if __name__ == "__main__":
     async def _main():

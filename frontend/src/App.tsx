@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from './api/client';
 import type { User, Character, Quest, Item, InventoryItem } from './types';
@@ -7,14 +7,16 @@ import { GameHUD } from './components/game/GameHUD';
 import { BottomNavigation, type NavTab } from './components/game/BottomNavigation';
 import { GameBackground } from './components/game/GameBackground';
 import { GameLobby } from './features/Lobby/GameLobby';
-import { QuestBoard } from './features/Quests/QuestBoard';
-import { CharacterDashboard } from './features/CharacterDashboard';
-import { BattlePass } from './features/BattlePass/BattlePass';
-import { ShopView } from './features/ShopView';
-import { Achievements } from './features/Achievements/Achievements';
-import { Leaderboard } from './features/Leaderboard/Leaderboard';
 import { FloatingXPList, LevelUpModal } from './components/GamificationEffects';
 import { useUIStore } from './store/useUIStore';
+
+// Lazy load non-initial tabs for fast first paint and smooth code splitting
+const QuestBoard = lazy(() => import('./features/Quests/QuestBoard').then(m => ({ default: m.QuestBoard })));
+const CharacterDashboard = lazy(() => import('./features/CharacterDashboard').then(m => ({ default: m.CharacterDashboard })));
+const BattlePass = lazy(() => import('./features/BattlePass/BattlePass').then(m => ({ default: m.BattlePass })));
+const ShopView = lazy(() => import('./features/ShopView').then(m => ({ default: m.ShopView })));
+const Achievements = lazy(() => import('./features/Achievements/Achievements').then(m => ({ default: m.Achievements })));
+const Leaderboard = lazy(() => import('./features/Leaderboard/Leaderboard').then(m => ({ default: m.Leaderboard })));
 
 export const App: React.FC = () => {
   const queryClient = useQueryClient();
@@ -42,11 +44,11 @@ export const App: React.FC = () => {
     enabled: !!user,
   });
 
-  // 4. Shop & Inventory queries
+  // 4. Shop & Inventory queries (Lazy loaded when inventory tab is active to speed up home load)
   const { data: shopItems = [] } = useQuery<Item[]>({
     queryKey: ['shopItems'],
     queryFn: api.getShopItems,
-    enabled: !!user,
+    enabled: !!user && activeTab === 'inventory',
   });
 
   const { data: inventory = [] } = useQuery<InventoryItem[]>({
@@ -201,8 +203,10 @@ export const App: React.FC = () => {
     const xpGain = targetQuest ? (xpMap[targetQuest.difficulty] || 30) : 30;
     if (e) {
       addFloatingXp(`+${xpGain} XP`, e.clientX, e.clientY);
+      addFloatingXp(`🏆 +1 TROPHY`, e.clientX + 30, e.clientY - 25);
     } else {
       addFloatingXp(`+${xpGain} XP`, window.innerWidth / 2, window.innerHeight / 2);
+      addFloatingXp(`🏆 +1 TROPHY`, window.innerWidth / 2 + 30, window.innerHeight / 2 - 25);
     }
     await completeMutation.mutateAsync({ questId, proof });
   };
@@ -249,50 +253,56 @@ export const App: React.FC = () => {
 
       {/* Main Game Screen Router */}
       <main className="max-w-6xl mx-auto px-4 py-6 relative z-10">
-        {activeTab === 'lobby' && character && (
-          <GameLobby
-            user={user}
-            character={character}
-            activeQuests={quests.filter((q) => q.status === 'active')}
-            onStartQuest={() => setActiveTab('quests')}
-            onViewCharacter={() => setActiveTab('character')}
-            onViewBattlePass={() => setActiveTab('battlepass')}
-          />
-        )}
+        <Suspense fallback={
+          <div className="flex items-center justify-center py-20 text-xs font-mono font-bold text-amber-400 animate-pulse tracking-widest">
+            LOADING GAME SECTOR...
+          </div>
+        }>
+          {activeTab === 'lobby' && character && (
+            <GameLobby
+              user={user}
+              character={character}
+              activeQuests={quests.filter((q) => q.status === 'active')}
+              onStartQuest={() => setActiveTab('quests')}
+              onViewCharacter={() => setActiveTab('character')}
+              onViewBattlePass={() => setActiveTab('battlepass')}
+            />
+          )}
 
-        {activeTab === 'quests' && (
-          <QuestBoard
-            quests={quests}
-            attributes={character?.attributes.map((ca) => ca.attribute) || []}
-            onCreateQuest={handleCreateQuest}
-            onCompleteQuest={handleCompleteQuest}
-            onDeleteQuest={handleDeleteQuest}
-          />
-        )}
+          {activeTab === 'quests' && (
+            <QuestBoard
+              quests={quests}
+              attributes={character?.attributes.map((ca) => ca.attribute) || []}
+              onCreateQuest={handleCreateQuest}
+              onCompleteQuest={handleCompleteQuest}
+              onDeleteQuest={handleDeleteQuest}
+            />
+          )}
 
-        {activeTab === 'character' && character && (
-          <CharacterDashboard character={character} />
-        )}
+          {activeTab === 'character' && character && (
+            <CharacterDashboard character={character} />
+          )}
 
-        {activeTab === 'battlepass' && character && (
-          <BattlePass character={character} />
-        )}
+          {activeTab === 'battlepass' && character && (
+            <BattlePass character={character} />
+          )}
 
-        {activeTab === 'inventory' && character && (
-          <ShopView
-            items={shopItems}
-            inventory={inventory}
-            userGold={character.gold}
-            onPurchase={handlePurchase}
-            onEquip={handleEquip}
-          />
-        )}
+          {activeTab === 'inventory' && character && (
+            <ShopView
+              items={shopItems}
+              inventory={inventory}
+              userGold={character.gold}
+              onPurchase={handlePurchase}
+              onEquip={handleEquip}
+            />
+          )}
 
-        {activeTab === 'achievements' && <Achievements character={character} quests={quests} />}
+          {activeTab === 'achievements' && <Achievements character={character} quests={quests} />}
 
-        {activeTab === 'leaderboard' && (
-          <Leaderboard currentCharacter={character} currentUser={user} />
-        )}
+          {activeTab === 'leaderboard' && (
+            <Leaderboard currentCharacter={character} currentUser={user} />
+          )}
+        </Suspense>
       </main>
 
       {/* Persistent AAA Mobile Bottom Navigation Bar */}

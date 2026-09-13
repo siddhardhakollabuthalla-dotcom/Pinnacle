@@ -133,7 +133,26 @@ export const QuestBoard: React.FC<{
   const [description, setDescription] = useState('');
   const [difficulty, setDifficulty] = useState('medium');
   const [attributeId, setAttributeId] = useState('');
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [selectedDays, setSelectedDays] = useState<string[]>([]);
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
+
+  const DAYS_OF_WEEK = [
+    { key: 'Mon', label: 'M' },
+    { key: 'Tue', label: 'T' },
+    { key: 'Wed', label: 'W' },
+    { key: 'Thu', label: 'T' },
+    { key: 'Fri', label: 'F' },
+    { key: 'Sat', label: 'S' },
+    { key: 'Sun', label: 'S' },
+  ];
+
+  const toggleDay = (dayKey: string) => {
+    soundEngine.play('click');
+    setSelectedDays((prev) =>
+      prev.includes(dayKey) ? prev.filter((d) => d !== dayKey) : [...prev, dayKey]
+    );
+  };
 
   const { data: history = [] } = useQuery<QuestHistory[]>({
     queryKey: ['history'],
@@ -175,11 +194,12 @@ export const QuestBoard: React.FC<{
     setIsSubmittingProof(true);
     setProofError('');
     try {
+      const cleanLink = proofLink.trim();
       await onCompleteQuest(
         questForProof.id,
         {
           proof_text: trimmed,
-          proof_link: proofLink.trim() || undefined,
+          proof_link: cleanLink ? cleanLink : undefined,
         },
         proofTriggerEvent
       );
@@ -211,12 +231,16 @@ export const QuestBoard: React.FC<{
       description,
       difficulty,
       attribute_id: attributeId || undefined,
+      is_recurring: isRecurring || selectedDays.length > 0,
+      recurring_days: selectedDays.length > 0 ? selectedDays : undefined,
     };
 
     // Close modal and reset form immediately for instant response
     setTitle('');
     setDescription('');
     setAttributeId('');
+    setIsRecurring(false);
+    setSelectedDays([]);
     setShowModal(false);
 
     // Fire creation request
@@ -353,6 +377,12 @@ export const QuestBoard: React.FC<{
                         <span className={`text-[10px] font-mono font-bold uppercase px-2.5 py-0.5 rounded border ${diffConfig.badgeClass}`}>
                           {diffConfig.stars} {diffConfig.label}
                         </span>
+                        {quest.recurring_days && quest.recurring_days.length > 0 && (
+                          <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded border border-cyan-500/40 text-cyan-300 bg-cyan-500/10 flex items-center gap-1 shadow-[0_0_10px_rgba(6,182,212,0.2)]">
+                            <span>🔁 REPEATS:</span>
+                            <span className="text-white font-extrabold">{quest.recurring_days.join(', ')}</span>
+                          </span>
+                        )}
                       </div>
                       {quest.description && (
                         <p className="text-xs text-zinc-400 font-sans">{quest.description}</p>
@@ -361,6 +391,8 @@ export const QuestBoard: React.FC<{
                         <span>REWARD: <strong className="text-amber-400">+{diffConfig.xp} XP</strong></span>
                         <span>•</span>
                         <span>+50 COINS</span>
+                        <span>•</span>
+                        <span className="text-yellow-300 font-bold">🏆 +1 TROPHY</span>
                         {quest.attribute && (
                           <>
                             <span>•</span>
@@ -507,6 +539,47 @@ export const QuestBoard: React.FC<{
                 </div>
               </div>
 
+              {/* Alarm Style Weekly Recurring Selector */}
+              <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-mono text-amber-300 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                    <span>🔁 REPEATS WEEKLY ON SPECIFIC DAYS</span>
+                  </label>
+                  <span className="text-[10px] font-mono text-zinc-400">
+                    {selectedDays.length === 7
+                      ? 'Every Day'
+                      : selectedDays.length > 0
+                      ? `${selectedDays.length} days/week (${selectedDays.join(', ')})`
+                      : 'One-Time Quest'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-zinc-400 font-mono">
+                  Selected days will automatically re-add this quest every week. Reward is only issued when completed.
+                </p>
+
+                <div className="flex items-center justify-between gap-1.5 pt-1">
+                  {DAYS_OF_WEEK.map((day) => {
+                    const isSelected = selectedDays.includes(day.key);
+                    return (
+                      <button
+                        key={day.key}
+                        type="button"
+                        onClick={() => toggleDay(day.key)}
+                        className={`w-10 h-10 rounded-xl font-mono text-xs font-bold transition-all flex flex-col items-center justify-center border ${
+                          isSelected
+                            ? 'bg-gradient-to-b from-amber-400 to-amber-600 text-black border-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.5)] scale-105'
+                            : 'bg-black/60 text-zinc-400 border-white/10 hover:border-amber-500/50 hover:text-white'
+                        }`}
+                        title={`Toggle ${day.key}`}
+                      >
+                        <span>{day.label}</span>
+                        <span className="text-[8px] opacity-75 font-normal">{day.key}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
                 <button
                   type="button"
@@ -620,7 +693,7 @@ export const QuestBoard: React.FC<{
                       <span className="text-[10px] text-zinc-500 lowercase">{guidance.linkHint}</span>
                     </label>
                     <input
-                      type="url"
+                      type="text"
                       value={proofLink}
                       onChange={(e) => setProofLink(e.target.value)}
                       placeholder={guidance.linkPlaceholder}

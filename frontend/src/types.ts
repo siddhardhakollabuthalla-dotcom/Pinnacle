@@ -28,6 +28,7 @@ export interface Character {
   total_xp: number;
   gold: number;
   gems?: number;
+  trophies?: number;
   current_streak: number;
   longest_streak: number;
   last_completion_date?: string;
@@ -43,6 +44,7 @@ export interface Quest {
   difficulty: 'trivial' | 'easy' | 'medium' | 'hard' | 'epic' | 'legendary';
   is_recurring: boolean;
   recurrence_rule?: string;
+  recurring_days?: string[];
   status: 'active' | 'completed' | 'archived';
   due_at?: string;
   created_at: string;
@@ -52,6 +54,8 @@ export interface QuestCompletionResult {
   quest_id: string;
   xp_awarded: number;
   gold_awarded: number;
+  trophies_awarded?: number;
+  total_trophies?: number;
   leveled_up: boolean;
   new_level: number;
   current_streak: number;

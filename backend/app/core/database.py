@@ -22,6 +22,8 @@ async def init_db():
         await conn.run_sync(Base.metadata.create_all)
         await conn.execute(text("ALTER TABLE quest_completions ADD COLUMN IF NOT EXISTS proof_text TEXT;"))
         await conn.execute(text("ALTER TABLE quest_completions ADD COLUMN IF NOT EXISTS proof_link VARCHAR;"))
+        await conn.execute(text("ALTER TABLE characters ADD COLUMN IF NOT EXISTS trophies INTEGER DEFAULT 0;"))
+        await conn.execute(text("ALTER TABLE characters ADD COLUMN IF NOT EXISTS gems INTEGER DEFAULT 10;"))
 
 async def get_db():
     async with AsyncSessionLocal() as session:

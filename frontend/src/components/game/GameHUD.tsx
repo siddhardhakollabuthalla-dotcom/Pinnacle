@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Shield, Coins, Gem, Flame, Bell, Volume2, VolumeX } from 'lucide-react';
+import { Shield, Coins, Gem, Flame, Trophy, Bell, Volume2, VolumeX } from 'lucide-react';
 import type { User, Character } from '../../types';
 import { soundEngine } from '../../utils/soundEngine';
+import { getRankInfo } from '../../utils/rankingSystem';
 
 export const GameHUD: React.FC<{ user: User; character?: Character }> = ({ user, character }) => {
   const [soundOn, setSoundOn] = useState(soundEngine.isEnabled());
@@ -16,6 +17,8 @@ export const GameHUD: React.FC<{ user: User; character?: Character }> = ({ user,
   const currentXp = character?.current_xp || 0;
   const nextXp = character?.next_level_xp || 50;
   const xpPct = Math.min(100, Math.round((currentXp / nextXp) * 100));
+
+  const rankInfo = getRankInfo(character?.total_xp || 0, character?.current_streak || 0, character?.longest_streak || 0);
 
   return (
     <header className="sticky top-0 z-40 bg-[#07080d]/90 border-b border-cyan-500/20 backdrop-blur-2xl px-4 py-2.5 shadow-[0_4px_25px_rgba(0,0,0,0.8)]">
@@ -36,8 +39,12 @@ export const GameHUD: React.FC<{ user: User; character?: Character }> = ({ user,
           <div>
             <div className="flex items-center gap-2">
               <span className="font-game-title font-bold text-sm tracking-wider text-white uppercase">{user.username}</span>
-              <span className="text-[10px] font-mono text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/30 uppercase">
-                RANK: PLATINUM
+              <span
+                className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded border flex items-center gap-1 ${rankInfo.currentRank.badgeClass}`}
+                title={`Power Rating Score: ${rankInfo.ratingScore} (${rankInfo.currentRank.powerLevel})`}
+              >
+                <span>{rankInfo.currentRank.icon}</span>
+                <span>{rankInfo.currentRank.fullName}</span>
               </span>
             </div>
 
@@ -54,8 +61,14 @@ export const GameHUD: React.FC<{ user: User; character?: Character }> = ({ user,
           </div>
         </div>
 
-        {/* Top-Right: COINS 🪙, GEMS 💎, STREAK 🔥 HUD */}
+        {/* Top-Right: TROPHIES 🏆, COINS 🪙, GEMS 💎, STREAK 🔥 HUD */}
         <div className="flex items-center gap-3">
+          {/* Trophies */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-yellow-500/10 border border-yellow-500/40 text-yellow-300 font-mono text-xs font-bold shadow-[0_0_12px_rgba(234,179,8,0.2)]">
+            <Trophy className="w-4 h-4 text-yellow-400 fill-yellow-400 animate-pulse" />
+            <span>{character?.trophies || 0}</span>
+          </div>
+
           {/* Coins */}
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono text-xs font-bold shadow-[0_0_12px_rgba(245,158,11,0.15)]">
             <Coins className="w-4 h-4 text-amber-400 animate-pulse" />
