@@ -1,0 +1,28 @@
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics, isSupported } from "firebase/analytics";
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCSXNOxxyQpGLtePiClwVPnJRrE3H4Jxx4",
+  authDomain: "pinnacle-84da2.firebaseapp.com",
+  projectId: "pinnacle-84da2",
+  storageBucket: "pinnacle-84da2.firebasestorage.app",
+  messagingSenderId: "11506799489",
+  appId: "1:11506799489:web:ad3ce1caf164fadda7ce80",
+  measurementId: "G-PTYWDBX528"
+};
+
+// Initialize Firebase
+export const app = initializeApp(firebaseConfig);
+
+// Safely initialize analytics (checking environment support to prevent SSR/local node issues)
+export let analytics: any = null;
+if (typeof window !== 'undefined') {
+  isSupported().then((supported: boolean) => {
+    if (supported) {
+      analytics = getAnalytics(app);
+    }
+  });
+}
