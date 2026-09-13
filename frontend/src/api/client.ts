@@ -1,7 +1,7 @@
 import type { User, Character, Quest, QuestCompletionResult, Item, InventoryItem, QuestHistory, LeaderboardUser } from '../types';
 
-// Use relative '/api' endpoint so Vite proxies directly to FastAPI backend, resolving cross-origin HTTPS -> HTTP browser blocks
-const API_BASE = '/api';
+// Backend API URL: Use VITE_API_URL if defined, otherwise use the live Vercel backend API URL directly
+const API_BASE = import.meta.env.VITE_API_URL || 'https://backend-liart-ten-64.vercel.app';
 
 function getHeaders(contentType = true): Record<string, string> {
   const headers: Record<string, string> = {};

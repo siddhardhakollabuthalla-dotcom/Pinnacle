@@ -280,7 +280,7 @@ export const App: React.FC = () => {
           )}
 
           {activeTab === 'character' && character && (
-            <CharacterDashboard character={character} />
+            <CharacterDashboard character={character} quests={quests} />
           )}
 
           {activeTab === 'battlepass' && character && (

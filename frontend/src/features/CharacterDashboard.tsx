@@ -1,9 +1,10 @@
-import React from 'react';
-import { Sparkles, Dumbbell, Brain, ShieldCheck, Palette, HeartPulse, Crown, Zap } from 'lucide-react';
-import type { Character } from '../types';
+import React, { useState } from 'react';
+import { Sparkles, Dumbbell, Brain, ShieldCheck, Palette, HeartPulse, Crown, Zap, ChevronRight, Swords, X } from 'lucide-react';
+import type { Character, Quest } from '../types';
 import { XPBar, StreakFlame } from '../components/GamificationEffects';
 import { getRankInfo } from '../utils/rankingSystem';
 import { RankBadgeIcon } from '../components/game/RankBadgeIcon';
+import { soundEngine } from '../utils/soundEngine';
 
 const ATTRIBUTE_ICONS: Record<string, React.ReactNode> = {
   Dumbbell: <Dumbbell className="w-5 h-5 text-amber-400" />,
@@ -15,12 +16,25 @@ const ATTRIBUTE_ICONS: Record<string, React.ReactNode> = {
   Crown: <Crown className="w-5 h-5 text-amber-300" />,
 };
 
-export const CharacterDashboard: React.FC<{ character: Character }> = ({ character }) => {
+export const CharacterDashboard: React.FC<{ character: Character; quests?: Quest[] }> = ({ character, quests = [] }) => {
   const rankInfo = getRankInfo(character?.total_xp || 0, character?.current_streak || 0, character?.longest_streak || 0);
+  const [selectedAttributeId, setSelectedAttributeId] = useState<string | null>(null);
+
+  const selectedCharAttr = character.attributes.find((ca) => ca.attribute.id === selectedAttributeId);
+  
+  // Filter quests associated with selected attribute
+  const selectedQuests = selectedAttributeId
+    ? quests.filter((q) => q.attribute_id === selectedAttributeId || q.attribute?.id === selectedAttributeId)
+    : [];
+
+  const handleOpenAttributeModal = (attrId: string) => {
+    soundEngine.play('click');
+    setSelectedAttributeId(attrId);
+  };
 
   return (
     <div className="space-y-8">
-      {/* Hero Character Card - Epic Chronos RPG Profile Banner */}
+      {/* Profile Character Card - Epic Chronos RPG Profile Banner */}
       <div className="relative overflow-hidden glass-card rounded-3xl p-8 border border-amber-500/30 shadow-[0_0_50px_rgba(245,158,11,0.15)]">
         {/* Ambient Glowing Orbs */}
         <div className="absolute -top-20 -right-20 w-72 h-72 bg-amber-500/20 rounded-full blur-[100px] pointer-events-none" />
@@ -50,7 +64,7 @@ export const CharacterDashboard: React.FC<{ character: Character }> = ({ charact
                 <StreakFlame streak={character.current_streak} />
               </div>
               <h2 className="text-3xl font-black font-cinzel text-white tracking-wide mt-1">
-                CHRONOS GUARDIAN
+                PLAYER PROFILE
               </h2>
               <p className="text-xs text-zinc-400 font-mono mt-1 flex items-center gap-2">
                 <span>Longest Streak: <strong className="text-amber-400">{character.longest_streak} DAYS</strong></span>
@@ -93,7 +107,7 @@ export const CharacterDashboard: React.FC<{ character: Character }> = ({ charact
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-bold font-cinzel tracking-widest text-amber-400 uppercase flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-400" /> STAT TREE & ATTRIBUTES
+            <Sparkles className="w-4 h-4 text-amber-400" /> STAT TREE & ATTRIBUTES (CLICK CARD TO VIEW QUESTS)
           </h3>
           <span className="text-xs font-mono text-zinc-500">{character.attributes.length} ACTIVE STATS</span>
         </div>
@@ -104,7 +118,8 @@ export const CharacterDashboard: React.FC<{ character: Character }> = ({ charact
             return (
               <div
                 key={ca.attribute.id}
-                className="glass-card hover:border-amber-500/40 transition-all rounded-2xl p-5 group relative overflow-hidden"
+                onClick={() => handleOpenAttributeModal(ca.attribute.id)}
+                className="glass-card hover:border-amber-500/60 hover:scale-[1.02] cursor-pointer transition-all rounded-2xl p-5 group relative overflow-hidden shadow-lg"
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
@@ -112,8 +127,9 @@ export const CharacterDashboard: React.FC<{ character: Character }> = ({ charact
                       {ATTRIBUTE_ICONS[ca.attribute.icon] || <Sparkles className="w-5 h-5 text-zinc-400" />}
                     </div>
                     <div>
-                      <h4 className="text-base font-bold font-cinzel text-white group-hover:text-amber-300 transition-colors">
-                        {ca.attribute.display_name}
+                      <h4 className="text-base font-bold font-cinzel text-white group-hover:text-amber-300 transition-colors flex items-center gap-1.5">
+                        <span>{ca.attribute.display_name}</span>
+                        <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-amber-400 group-hover:translate-x-1 transition-all" />
                       </h4>
                       <span className="text-[10px] font-mono text-zinc-400">{ca.attribute.description}</span>
                     </div>
@@ -131,7 +147,7 @@ export const CharacterDashboard: React.FC<{ character: Character }> = ({ charact
                 </div>
 
                 <div className="flex justify-between items-center mt-2 text-[11px] font-mono text-zinc-400">
-                  <span className="text-zinc-500">PROGRESS</span>
+                  <span className="text-zinc-500">CLICK TO VIEW QUESTS</span>
                   <span className="text-amber-300 font-bold">{ca.xp} / {ca.next_level_xp} XP ({attrPct}%)</span>
                 </div>
               </div>
@@ -139,6 +155,104 @@ export const CharacterDashboard: React.FC<{ character: Character }> = ({ charact
           })}
         </div>
       </div>
+
+      {/* Attribute Quests Modal */}
+      {selectedCharAttr && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+          <div className="w-full max-w-2xl game-panel-gold rounded-3xl p-6 border-2 border-amber-500/60 shadow-[0_0_50px_rgba(245,158,11,0.3)] text-white space-y-4 max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-zinc-900 border border-amber-500/40 text-amber-400">
+                  {ATTRIBUTE_ICONS[selectedCharAttr.attribute.icon] || <Sparkles className="w-5 h-5" />}
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold font-game-title text-amber-300 flex items-center gap-2">
+                    <span>{selectedCharAttr.attribute.display_name.toUpperCase()} QUEST LOG</span>
+                    <span className="text-xs font-mono font-black text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/30">
+                      LVL {selectedCharAttr.level}
+                    </span>
+                  </h3>
+                  <p className="text-xs font-mono text-zinc-400">{selectedCharAttr.attribute.description}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedAttributeId(null)}
+                className="text-zinc-400 hover:text-white p-1 rounded-lg border border-white/10 hover:bg-white/10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Quests List */}
+            <div className="overflow-y-auto space-y-3 pr-1 flex-1">
+              {selectedQuests.length === 0 ? (
+                <div className="text-center py-10 game-panel rounded-2xl p-6 border border-white/10 space-y-2">
+                  <Swords className="w-10 h-10 text-zinc-600 mx-auto opacity-50" />
+                  <h4 className="text-sm font-bold font-game-title text-zinc-400">NO QUESTS BOUND TO THIS STAT YET</h4>
+                  <p className="text-xs font-mono text-zinc-500">
+                    Accept or create quests with target stat "{selectedCharAttr.attribute.display_name}" to train this attribute.
+                  </p>
+                </div>
+              ) : (
+                selectedQuests.map((q) => {
+                  const isDone = q.status === 'completed';
+                  return (
+                    <div
+                      key={q.id}
+                      className={`p-4 rounded-2xl border transition-all flex items-start justify-between gap-3 ${
+                        isDone
+                          ? 'bg-emerald-950/20 border-emerald-500/30'
+                          : 'bg-black/50 border-white/10'
+                      }`}
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded border ${
+                            isDone
+                              ? 'border-emerald-500/40 text-emerald-400 bg-emerald-500/10'
+                              : 'border-amber-500/40 text-amber-400 bg-amber-500/10'
+                          }`}>
+                            {isDone ? '✓ COMPLETED' : '⚔ ACTIVE'}
+                          </span>
+                          <h4 className={`text-sm font-bold font-game-title ${isDone ? 'line-through text-zinc-400' : 'text-white'}`}>
+                            {q.title}
+                          </h4>
+                        </div>
+                        {q.description && (
+                          <p className="text-xs text-zinc-400 font-sans">{q.description}</p>
+                        )}
+                        {q.recurring_days && q.recurring_days.length > 0 && (
+                          <div className="text-[10px] font-mono text-cyan-400">
+                            🔁 Repeats on: {q.recurring_days.join(', ')}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <span className="text-xs font-mono text-amber-400 font-bold block">
+                          +{q.difficulty === 'easy' ? 15 : q.difficulty === 'medium' ? 30 : q.difficulty === 'hard' ? 60 : 120} XP
+                        </span>
+                        <span className="text-[10px] font-mono text-cyan-300 font-bold uppercase">
+                          +{selectedCharAttr.attribute.display_name}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-white/10 flex justify-end">
+              <button
+                onClick={() => setSelectedAttributeId(null)}
+                className="btn-game-primary py-2 px-5 text-xs tracking-wider rounded-xl shadow"
+              >
+                [ CLOSE STAT LOG ]
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
