@@ -2,7 +2,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta, time
 
 from app.core.database import get_db
 from app.api.auth import get_current_user
@@ -14,26 +14,73 @@ from app.services.progression import (
 
 router = APIRouter(prefix="/quests", tags=["quests"])
 
+def _parse_recurring_days(recurrence_rule: Optional[str]) -> Optional[List[str]]:
+    if not recurrence_rule:
+        return None
+    if recurrence_rule.startswith("days:"):
+        return [d.strip() for d in recurrence_rule[5:].split(",") if d.strip()]
+    return None
+
+def _format_recurrence_rule(is_recurring: bool, recurrence_rule: Optional[str], recurring_days: Optional[List[str]]) -> Optional[str]:
+    if not is_recurring:
+        return None
+    if recurring_days and len(recurring_days) > 0:
+        return f"days:{','.join(recurring_days)}"
+    return recurrence_rule or "daily"
+
+def _get_current_4am_reset_boundary(now: datetime) -> datetime:
+    """Calculates the most recent 4:00 AM boundary timestamp."""
+    four_am_today = datetime.combine(now.date(), time(4, 0, 0), tzinfo=timezone.utc)
+    if now >= four_am_today:
+        return four_am_today
+    else:
+        return four_am_today - timedelta(days=1)
+
 @router.get("", response_model=List[QuestOut])
 async def get_quests(
     status_filter: Optional[str] = "active",
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    query = select(Quest).filter(Quest.user_id == current_user.id)
-    if status_filter and status_filter.lower() != "all":
-        query = query.filter(Quest.status == status_filter)
+    now = datetime.now(timezone.utc)
+    reset_boundary = _get_current_4am_reset_boundary(now)
 
+    query = select(Quest).filter(Quest.user_id == current_user.id)
     result = await db.execute(query.order_by(Quest.created_at.desc()))
     quests = result.scalars().all()
 
     quests_out = []
     for q in quests:
+        # Check last completion for recurring quests to evaluate if reset at 4:00 AM has passed
+        q_status = q.status
+        if q.is_recurring:
+            comp_res = await db.execute(
+                select(QuestCompletion)
+                .filter(QuestCompletion.quest_id == q.id, QuestCompletion.user_id == current_user.id)
+                .order_by(QuestCompletion.completed_at.desc())
+            )
+            latest_completion = comp_res.scalars().first()
+
+            if latest_completion:
+                comp_time = latest_completion.completed_at
+                if comp_time.tzinfo is None:
+                    comp_time = comp_time.replace(tzinfo=timezone.utc)
+
+                # If completed after the most recent 4:00 AM reset, keep status as completed
+                if comp_time >= reset_boundary:
+                    q_status = "completed"
+                else:
+                    q_status = "active"
+
+        # Apply status filter
+        if status_filter and status_filter.lower() != "all" and q_status != status_filter.lower():
+            continue
+
         attr_obj = None
         if q.attribute_id:
             attr_res = await db.execute(select(Attribute).filter(Attribute.id == q.attribute_id))
             attr_obj = attr_res.scalars().first()
-        
+
         q_out = QuestOut(
             id=q.id,
             title=q.title,
@@ -43,7 +90,8 @@ async def get_quests(
             difficulty=q.difficulty,
             is_recurring=q.is_recurring,
             recurrence_rule=q.recurrence_rule,
-            status=q.status,
+            recurring_days=_parse_recurring_days(q.recurrence_rule),
+            status=q_status,
             due_at=q.due_at,
             created_at=q.created_at
         )
@@ -62,14 +110,16 @@ async def create_quest(
         if not attr_check.scalars().first():
             raise HTTPException(status_code=400, detail="Invalid attribute ID")
 
+    rec_rule = _format_recurrence_rule(quest_in.is_recurring, quest_in.recurrence_rule, quest_in.recurring_days)
+
     new_quest = Quest(
         user_id=current_user.id,
         title=quest_in.title,
         description=quest_in.description,
         attribute_id=quest_in.attribute_id,
         difficulty=quest_in.difficulty,
-        is_recurring=quest_in.is_recurring,
-        recurrence_rule=quest_in.recurrence_rule,
+        is_recurring=quest_in.is_recurring or bool(quest_in.recurring_days),
+        recurrence_rule=rec_rule,
         due_at=quest_in.due_at,
         status="active"
     )
@@ -91,6 +141,7 @@ async def create_quest(
         difficulty=new_quest.difficulty,
         is_recurring=new_quest.is_recurring,
         recurrence_rule=new_quest.recurrence_rule,
+        recurring_days=_parse_recurring_days(new_quest.recurrence_rule),
         status=new_quest.status,
         due_at=new_quest.due_at,
         created_at=new_quest.created_at
@@ -136,6 +187,7 @@ async def update_quest(
         difficulty=quest.difficulty,
         is_recurring=quest.is_recurring,
         recurrence_rule=quest.recurrence_rule,
+        recurring_days=_parse_recurring_days(quest.recurrence_rule),
         status=quest.status,
         due_at=quest.due_at,
         created_at=quest.created_at
@@ -176,6 +228,23 @@ async def complete_quest(
 
     if quest.status == "completed" and not quest.is_recurring:
         raise HTTPException(status_code=400, detail="Quest already completed")
+
+    # Check if recurring quest was already completed in the current 4:00 AM cycle
+    if quest.is_recurring:
+        now = datetime.now(timezone.utc)
+        reset_boundary = _get_current_4am_reset_boundary(now)
+        comp_res = await db.execute(
+            select(QuestCompletion)
+            .filter(QuestCompletion.quest_id == quest.id, QuestCompletion.user_id == current_user.id)
+            .order_by(QuestCompletion.completed_at.desc())
+        )
+        latest_comp = comp_res.scalars().first()
+        if latest_comp:
+            comp_time = latest_comp.completed_at
+            if comp_time.tzinfo is None:
+                comp_time = comp_time.replace(tzinfo=timezone.utc)
+            if comp_time >= reset_boundary:
+                raise HTTPException(status_code=400, detail="This quest was already completed for today. It will reset after 4:00 AM.")
 
     # Anti-cheat proof verification
     if not complete_in or not complete_in.proof_text or len(complete_in.proof_text.strip()) < 5:
@@ -260,6 +329,8 @@ async def complete_quest(
         quest_id=quest.id,
         xp_awarded=xp_awarded,
         gold_awarded=gold_awarded,
+        trophies_awarded=1,
+        total_trophies=character.trophies or 0,
         leveled_up=leveled_up,
         new_level=new_level,
         current_streak=current_streak,

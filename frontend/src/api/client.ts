@@ -88,6 +88,7 @@ export const api = {
     attribute_id?: string;
     difficulty: string;
     is_recurring?: boolean;
+    recurring_days?: string[];
   }): Promise<Quest> => {
     const res = await fetch(`${API_BASE}/quests`, {
       method: 'POST',

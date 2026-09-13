@@ -51,6 +51,7 @@ class CharacterOut(BaseModel):
     total_xp: int
     gold: int
     gems: int = 10
+    trophies: int = 0
     current_streak: int
     longest_streak: int
     last_completion_date: Optional[str] = None
@@ -64,6 +65,7 @@ class QuestCreate(BaseModel):
     difficulty: str = Field("medium", pattern="^(trivial|easy|medium|hard|epic|legendary)$")
     is_recurring: bool = False
     recurrence_rule: Optional[str] = None
+    recurring_days: Optional[List[str]] = None
     due_at: Optional[datetime] = None
 
 class QuestUpdate(BaseModel):
@@ -73,6 +75,7 @@ class QuestUpdate(BaseModel):
     difficulty: Optional[str] = Field(None, pattern="^(trivial|easy|medium|hard|epic|legendary)$")
     is_recurring: Optional[bool] = None
     recurrence_rule: Optional[str] = None
+    recurring_days: Optional[List[str]] = None
     due_at: Optional[datetime] = None
     status: Optional[str] = None
 
@@ -86,6 +89,7 @@ class QuestOut(BaseModel):
     difficulty: str
     is_recurring: bool
     recurrence_rule: Optional[str]
+    recurring_days: Optional[List[str]] = None
     status: str
     due_at: Optional[datetime]
     created_at: datetime
@@ -98,6 +102,8 @@ class QuestCompletionResult(BaseModel):
     quest_id: str
     xp_awarded: int
     gold_awarded: int
+    trophies_awarded: int = 1
+    total_trophies: int = 0
     leveled_up: bool
     new_level: int
     current_streak: int
