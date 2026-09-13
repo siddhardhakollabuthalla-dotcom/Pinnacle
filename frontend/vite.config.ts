@@ -8,6 +8,9 @@ export default defineConfig({
     tailwindcss(),
     react()
   ],
+  optimizeDeps: {
+    include: ['firebase/app', 'firebase/auth', 'firebase/analytics']
+  },
   server: {
     host: true,
     allowedHosts: [
